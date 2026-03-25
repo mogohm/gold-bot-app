@@ -97,7 +97,15 @@ export default function HomePage() {
         return;
       }
 
-      setCandles(data.candles);
+      const formatted = data.candles.map((c: any) => ({
+        time: c.time as Time,
+        open: Number(c.open),
+        high: Number(c.high),
+        low: Number(c.low),
+        close: Number(c.close),
+      }));
+
+      setCandles(formatted);
       setSource(data.source || "unknown");
       setLastCandlesAt(Date.now());
     } catch (err) {
