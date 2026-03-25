@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import {
-  CandlestickSeries,
-  ColorType,
-  LineSeries,
   createChart,
-  type CandlestickData,
+  CandlestickSeries,
+  LineSeries,
+  ColorType,
   type IChartApi,
   type ISeriesApi,
+  type CandlestickData,
   type LineData,
   type Time,
 } from "lightweight-charts";
@@ -28,7 +28,8 @@ export default function XAUChart({ candles, livePrice }: Props) {
     if (!containerRef.current) return;
 
     const chart = createChart(containerRef.current, {
-      autoSize: true,
+      width: containerRef.current.clientWidth || 900,
+      height: 560,
       layout: {
         background: { type: ColorType.Solid, color: "#020617" },
         textColor: "#cbd5e1",
@@ -44,9 +45,6 @@ export default function XAUChart({ candles, livePrice }: Props) {
         borderColor: "#334155",
         timeVisible: true,
         secondsVisible: false,
-      },
-      crosshair: {
-        mode: 0,
       },
     });
 
@@ -71,21 +69,19 @@ export default function XAUChart({ candles, livePrice }: Props) {
     candleSeriesRef.current = candleSeries;
     liveLineRef.current = liveLine;
 
-    if (candles.length) {
-     if (candles && candles.length > 0) {
-            candleSeries.setData(candles);
-          }
-      chart.timeScale().fitContent();
-    }
+    const resize = () => {
+      if (!containerRef.current || !chartRef.current) return;
+      chartRef.current.applyOptions({
+        width: containerRef.current.clientWidth || 900,
+        height: 560,
+      });
+      chartRef.current.timeScale().fitContent();
+    };
 
-    const resizeObserver = new ResizeObserver(() => {
-      chart.timeScale().fitContent();
-    });
-
-    resizeObserver.observe(containerRef.current);
+    window.addEventListener("resize", resize);
 
     return () => {
-      resizeObserver.disconnect();
+      window.removeEventListener("resize", resize);
       chart.remove();
       chartRef.current = null;
       candleSeriesRef.current = null;
@@ -95,17 +91,23 @@ export default function XAUChart({ candles, livePrice }: Props) {
 
   useEffect(() => {
     if (!candleSeriesRef.current || !chartRef.current) return;
+    if (!candles || candles.length === 0) return;
+
     candleSeriesRef.current.setData(candles);
     chartRef.current.timeScale().fitContent();
   }, [candles]);
 
   useEffect(() => {
-    if (!liveLineRef.current || !livePrice || candles.length === 0) return;
+    if (!liveLineRef.current) return;
+    if (!candles || candles.length === 0) return;
+    if (typeof livePrice !== "number") return;
 
     const last = candles[candles.length - 1];
-    const lineData: LineData<Time>[] = [{ time: last.time, value: livePrice }];
+    const lineData: LineData<Time>[] = [
+      { time: last.time, value: livePrice },
+    ];
     liveLineRef.current.setData(lineData);
   }, [livePrice, candles]);
 
-  return <div ref={containerRef} className="h-[560px] w-full rounded-2xl" />;
+  return <div ref={containerRef} className="w-full rounded-2xl" />;
 }
