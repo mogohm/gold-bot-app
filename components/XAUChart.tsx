@@ -53,7 +53,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
 
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth || 900,
-      height: 460,
+      height: 360,
       layout: {
         background: { type: ColorType.Solid, color: "#020617" },
         textColor: "#cbd5e1",
@@ -103,7 +103,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
       if (!containerRef.current || !chartRef.current) return;
       chartRef.current.applyOptions({
         width: containerRef.current.clientWidth || 900,
-        height: 460,
+        height: 360,
       });
       chartRef.current.timeScale().fitContent();
     };
