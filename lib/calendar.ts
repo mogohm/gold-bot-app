@@ -20,6 +20,6 @@ export async function fetchCalendar(): Promise<NewsEvent[]> {
       title: String(x.Event || "Unknown Event"),
       country: x.Country === "United States" ? "US" : x.Country === "United Kingdom" ? "UK" : String(x.Country || "NA"),
       time: new Date(x.Date || Date.now()).toISOString(),
-      impact: x.Importance === 3 ? "high" : x.Importance === 2 ? "medium" : "low",
+      impact: Number(x.Importance) === 3 ? "high" : Number(x.Importance) === 2 ? "medium" : "low",
     }));
 }
