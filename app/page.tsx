@@ -420,30 +420,32 @@ export default function HomePage() {
   }, [orders]);
 
   const chartMarkers = useMemo<BotMarker[]>(() => {
-    const out: BotMarker[] = [];
+  const out: BotMarker[] = [];
 
-    for (const order of orders) {
+  for (const order of orders) {
+    out.push({
+      time: order.entryTime as Time,
+      position: order.side === "BUY" ? "belowBar" : "aboveBar",
+      color: order.side === "BUY" ? "#22c55e" : "#ef4444",
+      shape: order.side === "BUY" ? "arrowUp" : "arrowDown",
+      text: `${order.side} ${order.entryPrice.toFixed(2)}`,
+    });
+
+    if (order.exitTime && typeof order.exitPrice === "number") {
       out.push({
-        time: order.entryTime,
-        position: order.side === "BUY" ? "belowBar" : "aboveBar",
-        color: order.side === "BUY" ? "#22c55e" : "#ef4444",
-        shape: order.side === "BUY" ? "arrowUp" : "arrowDown",
-        text: `${order.side} ${order.entryPrice.toFixed(2)}`,
+        time: order.exitTime as Time,
+        position: "inBar",
+        color: order.status === "TP" ? "#38bdf8" : "#f59e0b",
+        shape: "circle",
+        text: `${order.status} ${order.exitPrice.toFixed(2)}`,
       });
-
-      if (order.exitTime && typeof order.exitPrice === "number") {
-        out.push({
-          time: order.exitTime,
-          position: "inBar",
-          color: order.status === "TP" ? "#38bdf8" : "#f59e0b",
-          shape: "circle",
-          text: `${order.status} ${order.exitPrice.toFixed(2)}`,
-        });
-      }
     }
+  }
 
-    return out;
-  }, [orders]);
+  return out;
+}, [orders]);
+
+   
 
   const lastCandle = useMemo(() => candles[candles.length - 1], [candles]);
   const openOrder = orders.find((o) => o.status === "OPEN");
