@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 
 const API_KEY = process.env.TWELVE_DATA_API_KEY;
 
+let quoteCache: {
+  price: number;
+  time: number;
+  source: string;
+} | null = null;
+
+const QUOTE_CACHE_MS = 10_000;
+
 function makeMockQuote() {
   const price = +(2350 + (Math.random() - 0.5) * 10).toFixed(2);
   return {
@@ -14,8 +22,24 @@ function makeMockQuote() {
 }
 
 export async function GET() {
+  if (quoteCache && Date.now() - quoteCache.time < QUOTE_CACHE_MS) {
+    return NextResponse.json({
+      ok: true,
+      source: `${quoteCache.source}-cache`,
+      symbol: "XAU/USD",
+      price: quoteCache.price,
+      time: quoteCache.time,
+    });
+  }
+
   if (!API_KEY) {
-    return NextResponse.json(makeMockQuote());
+    const mock = makeMockQuote();
+    quoteCache = {
+      price: mock.price,
+      time: mock.time,
+      source: "mock",
+    };
+    return NextResponse.json(mock);
   }
 
   try {
@@ -37,13 +61,21 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({
+    const payload = {
       ok: true,
       source: "twelvedata",
       symbol: "XAU/USD",
       price: Number(data.price),
       time: Date.now(),
-    });
+    };
+
+    quoteCache = {
+      price: payload.price,
+      time: payload.time,
+      source: payload.source,
+    };
+
+    return NextResponse.json(payload);
   } catch (error) {
     return NextResponse.json(
       {
