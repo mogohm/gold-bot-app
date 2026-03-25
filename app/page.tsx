@@ -285,3 +285,4 @@ function StatCard({
     </div>
   );
 }
+console.log("CANDLES:", candles);
