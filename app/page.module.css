@@ -64,6 +64,12 @@
   font-size: 12px;
   font-weight: 700;
   min-width: 54px;
+  transition: 0.18s ease;
+}
+
+.timeBtn:hover,
+.botBtn:hover {
+  border-color: #64748b;
 }
 
 .timeBtnActive {
@@ -101,6 +107,7 @@
   font-size: 10px;
   letter-spacing: 0.08em;
   color: #64748b;
+  text-transform: uppercase;
 }
 
 .miniValue {
@@ -109,6 +116,7 @@
   font-weight: 700;
   color: #f8fafc;
   line-height: 1.2;
+  word-break: break-word;
 }
 
 .mainGridCompact {
@@ -119,8 +127,8 @@
 }
 
 .chartPanelCompact,
-.logPanelCompact,
-.infoStrip {
+.infoStrip,
+.logPanelCompact {
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -136,6 +144,7 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   color: #f8fafc;
+  text-transform: uppercase;
 }
 
 .panelSub {
@@ -172,6 +181,8 @@
   border-radius: 12px;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .miniGrid {
@@ -193,6 +204,7 @@
   font-size: 10px;
   letter-spacing: 0.08em;
   color: #64748b;
+  text-transform: uppercase;
 }
 
 .statValueCompact {
@@ -229,6 +241,7 @@
 .badgeLabel {
   font-size: 11px;
   color: #94a3b8;
+  text-transform: uppercase;
 }
 
 .badge {
@@ -239,6 +252,8 @@
   padding: 5px 9px;
   font-size: 10px;
   font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .badgeGreen {
@@ -332,12 +347,14 @@
 .compactLabel {
   color: #64748b;
   font-weight: 700;
+  text-transform: uppercase;
 }
 
 .compactValue {
   color: #f8fafc;
   font-weight: 600;
   text-align: right;
+  word-break: break-word;
 }
 
 .summaryCompactGrid {
@@ -373,6 +390,7 @@
   text-align: left;
   padding: 10px;
   border-bottom: 1px solid #334155;
+  text-transform: uppercase;
 }
 
 .table tbody td {
