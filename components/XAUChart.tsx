@@ -12,14 +12,14 @@ import {
   type CandlestickData,
   type LineData,
   type Time,
-  type SeriesMarker,
-  type SeriesMarkerPosition,
+  type SeriesMarkerBar,
+  type SeriesMarkerBarPosition,
   type SeriesMarkerShape,
 } from "lightweight-charts";
 
 export type BotMarker = {
   time: Time;
-  position: SeriesMarkerPosition;
+  position: SeriesMarkerBarPosition;
   color: string;
   shape: SeriesMarkerShape;
   text: string;
@@ -38,7 +38,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
   const liveLineRef = useRef<ISeriesApi<"Line"> | null>(null);
   const markersApiRef = useRef<ReturnType<typeof createSeriesMarkers<Time>> | null>(null);
 
-  const safeMarkers = useMemo<SeriesMarker<Time>[]>(() => {
+  const safeMarkers = useMemo((): SeriesMarkerBar<Time>[] => {
     return markers.map((m) => ({
       time: m.time as Time,
       position: m.position,
