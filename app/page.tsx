@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CandlestickData, Time } from "lightweight-charts";
-import XAUChart from "@/components/XAUChart";
+import XAUChart, { type BotMarker } from "@/components/XAUChart";
 import { TIMEFRAME_OPTIONS, type TimeframeValue } from "@/lib/timeframes";
 
 type RawCandle = {
@@ -30,6 +30,20 @@ type QuoteResponse = {
   error?: string;
 };
 
+type SimOrder = {
+  id: string;
+  side: "BUY" | "SELL";
+  status: "OPEN" | "TP" | "SL" | "CLOSED";
+  entryTime: number;
+  exitTime?: number;
+  entryPrice: number;
+  exitPrice?: number;
+  tp: number;
+  sl: number;
+  pnl?: number;
+  reason: string;
+};
+
 function getCandleRefreshMs(interval: TimeframeValue) {
   switch (interval) {
     case "1min":
@@ -54,21 +68,21 @@ function getCandleRefreshMs(interval: TimeframeValue) {
 function getQuoteRefreshMs(interval: TimeframeValue) {
   switch (interval) {
     case "1min":
-      return 15_000;
+      return 5_000;
     case "5min":
-      return 20_000;
+      return 8_000;
     case "15min":
-      return 30_000;
+      return 12_000;
     case "30min":
-      return 45_000;
-    case "1h":
-      return 60_000;
-    case "1day":
-      return 120_000;
-    case "1month":
-      return 300_000;
-    default:
       return 15_000;
+    case "1h":
+      return 20_000;
+    case "1day":
+      return 30_000;
+    case "1month":
+      return 60_000;
+    default:
+      return 5_000;
   }
 }
 
@@ -91,9 +105,120 @@ function normalizeCandles(rows: RawCandle[] = []): CandlestickData<Time>[] {
     );
 }
 
+function getTfSeconds(interval: TimeframeValue) {
+  switch (interval) {
+    case "1min":
+      return 60;
+    case "5min":
+      return 300;
+    case "15min":
+      return 900;
+    case "30min":
+      return 1800;
+    case "1h":
+      return 3600;
+    case "1day":
+      return 86400;
+    case "1month":
+      return 2592000;
+    default:
+      return 60;
+  }
+}
+
+function createRealtimeCandles(
+  baseCandles: CandlestickData<Time>[],
+  livePrice: number | null,
+  interval: TimeframeValue
+): CandlestickData<Time>[] {
+  if (!baseCandles.length || typeof livePrice !== "number") return baseCandles;
+
+  const tfSeconds = getTfSeconds(interval);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const activeBucket = Math.floor(nowSec / tfSeconds) * tfSeconds;
+
+  const last = baseCandles[baseCandles.length - 1];
+  const lastTime = Number(last.time);
+
+  if (activeBucket > lastTime) {
+    const nextCandle: CandlestickData<Time> = {
+      time: activeBucket as Time,
+      open: last.close,
+      high: Math.max(last.close, livePrice),
+      low: Math.min(last.close, livePrice),
+      close: livePrice,
+    };
+    return [...baseCandles, nextCandle];
+  }
+
+  return [
+    ...baseCandles.slice(0, -1),
+    {
+      ...last,
+      high: Math.max(last.high, livePrice),
+      low: Math.min(last.low, livePrice),
+      close: livePrice,
+    },
+  ];
+}
+
+function sma(values: number[], period: number) {
+  const out: number[] = [];
+  for (let i = 0; i < values.length; i++) {
+    if (i < period - 1) {
+      out.push(values[i]);
+      continue;
+    }
+    const slice = values.slice(i - period + 1, i + 1);
+    out.push(slice.reduce((a, b) => a + b, 0) / period);
+  }
+  return out;
+}
+
+function detectBotSignal(candles: CandlestickData<Time>[], livePrice: number | null) {
+  if (candles.length < 25 || typeof livePrice !== "number") return null;
+
+  const closes = candles.map((c) => c.close);
+  const fast = sma(closes, 5);
+  const slow = sma(closes, 20);
+
+  const prevFast = fast[fast.length - 2];
+  const prevSlow = slow[slow.length - 2];
+  const currFast = fast[fast.length - 1];
+  const currSlow = slow[slow.length - 1];
+  const last = candles[candles.length - 1];
+  const range = Math.max(last.high - last.low, 0.6);
+
+  if (prevFast <= prevSlow && currFast > currSlow && livePrice >= last.close) {
+    return {
+      side: "BUY" as const,
+      entry: livePrice,
+      tp: +(livePrice + range * 1.4).toFixed(2),
+      sl: +(livePrice - range * 0.9).toFixed(2),
+      reason: "Fast SMA crossed above Slow SMA",
+    };
+  }
+
+  if (prevFast >= prevSlow && currFast < currSlow && livePrice <= last.close) {
+    return {
+      side: "SELL" as const,
+      entry: livePrice,
+      tp: +(livePrice - range * 1.4).toFixed(2),
+      sl: +(livePrice + range * 0.9).toFixed(2),
+      reason: "Fast SMA crossed below Slow SMA",
+    };
+  }
+
+  return null;
+}
+
+function makeId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export default function HomePage() {
   const [interval, setIntervalValue] = useState<TimeframeValue>("1min");
-  const [candles, setCandles] = useState<CandlestickData<Time>[]>([]);
+  const [baseCandles, setBaseCandles] = useState<CandlestickData<Time>[]>([]);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [loadingCandles, setLoadingCandles] = useState(true);
   const [loadingQuote, setLoadingQuote] = useState(true);
@@ -101,9 +226,13 @@ export default function HomePage() {
   const [source, setSource] = useState<string>("unknown");
   const [lastQuoteAt, setLastQuoteAt] = useState<number | null>(null);
   const [lastCandlesAt, setLastCandlesAt] = useState<number | null>(null);
+  const [orders, setOrders] = useState<SimOrder[]>([]);
+  const [botEnabled, setBotEnabled] = useState(true);
+  const [statusPulse, setStatusPulse] = useState(false);
 
   const loadingCandlesRef = useRef(false);
   const loadingQuoteRef = useRef(false);
+  const lastSignalBucketRef = useRef<string>("");
 
   async function loadCandles(selectedInterval: TimeframeValue) {
     if (loadingCandlesRef.current) return;
@@ -122,7 +251,7 @@ export default function HomePage() {
 
       if (!res.ok || !data.ok || !data.candles) {
         setError(data.error || "Failed to load candles");
-        setCandles([]);
+        setBaseCandles([]);
         setSource(data.source || "error");
         return;
       }
@@ -131,17 +260,17 @@ export default function HomePage() {
 
       if (formatted.length === 0) {
         setError("No valid candle data returned");
-        setCandles([]);
+        setBaseCandles([]);
         setSource(data.source || "error");
         return;
       }
 
-      setCandles(formatted);
+      setBaseCandles(formatted);
       setSource(data.source || "unknown");
       setLastCandlesAt(Date.now());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load candles");
-      setCandles([]);
+      setBaseCandles([]);
       setSource("error");
     } finally {
       setLoadingCandles(false);
@@ -166,7 +295,7 @@ export default function HomePage() {
       setLivePrice(Number(data.price));
       setLastQuoteAt(Date.now());
     } catch {
-      // ignore quote errors to keep chart usable
+      // keep UI alive
     } finally {
       setLoadingQuote(false);
       loadingQuoteRef.current = false;
@@ -174,6 +303,8 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    setOrders([]);
+    lastSignalBucketRef.current = "";
     loadCandles(interval);
     loadQuote();
   }, [interval]);
@@ -194,7 +325,129 @@ export default function HomePage() {
     return () => clearInterval(quoteTimer);
   }, [interval]);
 
+  const candles = useMemo(
+    () => createRealtimeCandles(baseCandles, livePrice, interval),
+    [baseCandles, livePrice, interval]
+  );
+
+  useEffect(() => {
+    if (!botEnabled) return;
+    if (!candles.length || typeof livePrice !== "number") return;
+
+    const signal = detectBotSignal(candles, livePrice);
+    if (!signal) return;
+
+    const last = candles[candles.length - 1];
+    const bucketKey = `${interval}-${signal.side}-${Number(last.time)}`;
+
+    const hasOpenOrder = orders.some((o) => o.status === "OPEN");
+    if (hasOpenOrder) return;
+    if (lastSignalBucketRef.current === bucketKey) return;
+
+    const newOrder: SimOrder = {
+      id: makeId(),
+      side: signal.side,
+      status: "OPEN",
+      entryTime: Number(last.time),
+      entryPrice: signal.entry,
+      tp: signal.tp,
+      sl: signal.sl,
+      reason: signal.reason,
+    };
+
+    lastSignalBucketRef.current = bucketKey;
+    setOrders((prev) => [newOrder, ...prev]);
+    setStatusPulse(true);
+  }, [candles, livePrice, botEnabled, interval, orders]);
+
+  useEffect(() => {
+    if (typeof livePrice !== "number") return;
+
+    setOrders((prev) =>
+      prev.map((order) => {
+        if (order.status !== "OPEN") return order;
+
+        if (order.side === "BUY") {
+          if (livePrice >= order.tp) {
+            return {
+              ...order,
+              status: "TP",
+              exitTime: Math.floor(Date.now() / 1000),
+              exitPrice: livePrice,
+              pnl: +(livePrice - order.entryPrice).toFixed(2),
+            };
+          }
+          if (livePrice <= order.sl) {
+            return {
+              ...order,
+              status: "SL",
+              exitTime: Math.floor(Date.now() / 1000),
+              exitPrice: livePrice,
+              pnl: +(livePrice - order.entryPrice).toFixed(2),
+            };
+          }
+        }
+
+        if (order.side === "SELL") {
+          if (livePrice <= order.tp) {
+            return {
+              ...order,
+              status: "TP",
+              exitTime: Math.floor(Date.now() / 1000),
+              exitPrice: livePrice,
+              pnl: +(order.entryPrice - livePrice).toFixed(2),
+            };
+          }
+          if (livePrice >= order.sl) {
+            return {
+              ...order,
+              status: "SL",
+              exitTime: Math.floor(Date.now() / 1000),
+              exitPrice: livePrice,
+              pnl: +(order.entryPrice - livePrice).toFixed(2),
+            };
+          }
+        }
+
+        return order;
+      })
+    );
+  }, [livePrice]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setStatusPulse(false), 1200);
+    return () => clearTimeout(timer);
+  }, [orders]);
+
+  const chartMarkers = useMemo<BotMarker[]>(() => {
+    const out: BotMarker[] = [];
+
+    for (const order of orders) {
+      out.push({
+        time: order.entryTime,
+        position: order.side === "BUY" ? "belowBar" : "aboveBar",
+        color: order.side === "BUY" ? "#22c55e" : "#ef4444",
+        shape: order.side === "BUY" ? "arrowUp" : "arrowDown",
+        text: `${order.side} ${order.entryPrice.toFixed(2)}`,
+      });
+
+      if (order.exitTime && typeof order.exitPrice === "number") {
+        out.push({
+          time: order.exitTime,
+          position: "inBar",
+          color: order.status === "TP" ? "#38bdf8" : "#f59e0b",
+          shape: "circle",
+          text: `${order.status} ${order.exitPrice.toFixed(2)}`,
+        });
+      }
+    }
+
+    return out;
+  }, [orders]);
+
   const lastCandle = useMemo(() => candles[candles.length - 1], [candles]);
+  const openOrder = orders.find((o) => o.status === "OPEN");
+  const totalPnL = orders.reduce((sum, o) => sum + (o.pnl || 0), 0);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -203,10 +456,10 @@ export default function HomePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                XAU/USD Real-Time Dashboard
+                XAU/USD Realtime Bot Simulator
               </h1>
               <p className="mt-2 text-slate-300">
-                Candlestick chart with real market data and timeframe switching.
+                Realtime moving candle + simulated bot entries and exits on chart.
               </p>
             </div>
 
@@ -248,6 +501,16 @@ export default function HomePage() {
                 <span className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-1 text-sm text-slate-300">
                   Candles: {candles.length}
                 </span>
+                <button
+                  onClick={() => setBotEnabled((v) => !v)}
+                  className={`rounded-xl border px-3 py-1 text-sm ${
+                    botEnabled
+                      ? "border-emerald-400 bg-emerald-500/10 text-emerald-300"
+                      : "border-slate-700 bg-slate-950 text-slate-300"
+                  }`}
+                >
+                  Bot {botEnabled ? "ON" : "OFF"}
+                </button>
               </div>
             </div>
 
@@ -265,7 +528,11 @@ export default function HomePage() {
                   No candle data available
                 </div>
               ) : (
-                <XAUChart candles={candles} livePrice={livePrice} />
+                <XAUChart
+                  candles={candles}
+                  livePrice={livePrice}
+                  markers={chartMarkers}
+                />
               )}
             </div>
           </div>
@@ -285,23 +552,148 @@ export default function HomePage() {
             </section>
 
             <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-              <h2 className="text-xl font-semibold">Last Candle</h2>
+              <h2 className="text-xl font-semibold">Bot Status</h2>
+              <div
+                className={`mt-4 rounded-2xl border p-4 ${
+                  openOrder
+                    ? "border-emerald-500/40 bg-emerald-500/10"
+                    : "border-slate-800 bg-slate-950"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Engine</span>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      botEnabled
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-slate-700 text-slate-300"
+                    }`}
+                  >
+                    {botEnabled ? "RUNNING" : "PAUSED"}
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  {openOrder ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <span className="relative flex h-3 w-3">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400"></span>
+                        </span>
+                        <span className="text-sm font-medium text-emerald-300">
+                          Active simulated order
+                        </span>
+                      </div>
+                      <div className={`${statusPulse ? "animate-pulse" : ""} rounded-2xl border border-emerald-500/30 bg-slate-950 p-3`}>
+                        <div className="text-sm">Side: {openOrder.side}</div>
+                        <div className="text-sm">Entry: {openOrder.entryPrice.toFixed(2)}</div>
+                        <div className="text-sm">TP: {openOrder.tp.toFixed(2)}</div>
+                        <div className="text-sm">SL: {openOrder.sl.toFixed(2)}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-400">
+                      No active simulated order
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+              <h2 className="text-xl font-semibold">Summary</h2>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <StatCard label="Open" value={lastCandle?.open} />
                 <StatCard label="High" value={lastCandle?.high} />
                 <StatCard label="Low" value={lastCandle?.low} />
                 <StatCard label="Close" value={lastCandle?.close} />
               </div>
-            </section>
-
-            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-              <h2 className="text-xl font-semibold">Request Status</h2>
-              <div className="mt-4 space-y-2 text-sm text-slate-300">
-                <p>Source: {source}</p>
-                <p>Last candles: {lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"}</p>
-                <p>Last quote: {lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"}</p>
+              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm">
+                <div>Total Orders: {orders.length}</div>
+                <div className={totalPnL >= 0 ? "text-emerald-300" : "text-red-300"}>
+                  Total PnL: {totalPnL.toFixed(2)}
+                </div>
+                <div>Last candles: {lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"}</div>
+                <div>Last quote: {lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"}</div>
               </div>
             </section>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-xl font-semibold">Bot Activity</h2>
+            <span className="text-sm text-slate-400">
+              Simulated only · no broker connected
+            </span>
+          </div>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400">
+                  <th className="px-3 py-3 text-left">Status</th>
+                  <th className="px-3 py-3 text-left">Side</th>
+                  <th className="px-3 py-3 text-left">Entry</th>
+                  <th className="px-3 py-3 text-left">TP</th>
+                  <th className="px-3 py-3 text-left">SL</th>
+                  <th className="px-3 py-3 text-left">Exit</th>
+                  <th className="px-3 py-3 text-left">PnL</th>
+                  <th className="px-3 py-3 text-left">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-6 text-center text-slate-400">
+                      No simulated orders yet
+                    </td>
+                  </tr>
+                ) : (
+                  orders.map((order) => (
+                    <tr key={order.id} className="border-b border-slate-900">
+                      <td className="px-3 py-3">
+                        {order.status === "OPEN" ? (
+                          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-emerald-300">
+                            <span className="relative flex h-2.5 w-2.5">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+                            </span>
+                            OPEN
+                          </span>
+                        ) : order.status === "TP" ? (
+                          <span className="rounded-full bg-sky-500/15 px-3 py-1 text-sky-300">
+                            TP HIT
+                          </span>
+                        ) : order.status === "SL" ? (
+                          <span className="rounded-full bg-amber-500/15 px-3 py-1 text-amber-300">
+                            SL HIT
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-slate-700 px-3 py-1 text-slate-300">
+                            CLOSED
+                          </span>
+                        )}
+                      </td>
+                      <td className={`px-3 py-3 font-medium ${order.side === "BUY" ? "text-emerald-300" : "text-red-300"}`}>
+                        {order.side}
+                      </td>
+                      <td className="px-3 py-3">{order.entryPrice.toFixed(2)}</td>
+                      <td className="px-3 py-3">{order.tp.toFixed(2)}</td>
+                      <td className="px-3 py-3">{order.sl.toFixed(2)}</td>
+                      <td className="px-3 py-3">
+                        {typeof order.exitPrice === "number" ? order.exitPrice.toFixed(2) : "--"}
+                      </td>
+                      <td className={`px-3 py-3 ${typeof order.pnl === "number" && order.pnl >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                        {typeof order.pnl === "number" ? order.pnl.toFixed(2) : "--"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-300">{order.reason}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
       </div>
