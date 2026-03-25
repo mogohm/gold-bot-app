@@ -218,7 +218,7 @@ function makeId() {
 }
 
 export default function HomePage() {
-  const [interval, setIntervalValue] = useState<TimeframeValue>("1min");
+  const [interval, setIntervalValue] = useState<TimeframeValue>("5min");
   const [baseCandles, setBaseCandles] = useState<CandlestickData<Time>[]>([]);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [loadingCandles, setLoadingCandles] = useState(true);
@@ -445,12 +445,12 @@ export default function HomePage() {
 
   return (
     <main className={styles.screen}>
-      <div className={styles.wrapper}>
-        <div className={styles.headerCard}>
+      <div className={styles.wrapperCompact}>
+        <div className={styles.topBar}>
           <div>
             <div className={styles.headerTitle}>XAU/USD BOT SIMULATOR DASHBOARD</div>
             <div className={styles.headerSub}>
-              Realtime chart · simulated orders · FullHD single-screen layout
+              Realtime chart · simulated orders · compact FullHD layout
             </div>
           </div>
 
@@ -473,22 +473,25 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className={styles.topStats}>
+        <div className={styles.statsCompact}>
           <MiniStat label="SOURCE" value={source} />
-          <MiniStat label="LIVE PRICE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
+          <MiniStat label="LIVE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
           <MiniStat label="CANDLES" value={String(candles.length)} />
-          <MiniStat label="LAST QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
-          <MiniStat label="LAST CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
-          <MiniStat label="TOTAL PNL" value={totalPnL.toFixed(2)} />
+          <MiniStat label="QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
+          <MiniStat label="CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
+          <MiniStat label="PNL" value={totalPnL.toFixed(2)} />
         </div>
 
-        <div className={styles.contentGrid}>
-          <section className={styles.chartPanel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelTitle}>PRICE CHART</div>
-              <div className={styles.panelSub}>Symbol: XAU/USD · Interval: {interval}</div>
+        <div className={styles.mainGridCompact}>
+          <section className={styles.chartPanelCompact}>
+            <div className={styles.panelHeaderCompact}>
+              <div>
+                <div className={styles.panelTitle}>PRICE CHART</div>
+                <div className={styles.panelSub}>XAU/USD · {interval}</div>
+              </div>
             </div>
-            <div className={styles.chartBody}>
+
+            <div className={styles.chartBodyCompact}>
               {error ? (
                 <div className={styles.centerMessageError}>{error}</div>
               ) : loadingCandles && candles.length === 0 ? (
@@ -501,83 +504,81 @@ export default function HomePage() {
             </div>
           </section>
 
-          <div className={styles.rightCol}>
-            <section className={styles.sidePanel}>
-              <div className={styles.panelHeader}>
-                <div className={styles.panelTitle}>LIVE MARKET STATUS</div>
-                <div className={styles.panelSub}>Current candle and quote information</div>
+          <aside className={styles.sideCompact}>
+            <section className={styles.sideCardCompact}>
+              <div className={styles.panelHeaderCompact}>
+                <div className={styles.panelTitle}>MARKET</div>
+                <div className={styles.panelSub}>Current values</div>
               </div>
-              <div className={styles.cardGrid2}>
+              <div className={styles.miniGrid}>
                 <StatCard label="OPEN" value={lastCandle?.open} />
                 <StatCard label="HIGH" value={lastCandle?.high} />
                 <StatCard label="LOW" value={lastCandle?.low} />
                 <StatCard label="CLOSE" value={lastCandle?.close} />
               </div>
-              <div className={styles.infoBox}>
-                Quote polling: {loadingQuote ? "Refreshing..." : `Every ${getQuoteRefreshMs(interval) / 1000} sec`}
+              <div className={styles.inlineInfo}>
+                Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
               </div>
             </section>
 
-            <section className={styles.sidePanel}>
-              <div className={styles.panelHeader}>
+            <section className={styles.sideCardCompact}>
+              <div className={styles.panelHeaderCompact}>
                 <div className={styles.panelTitle}>BOT STATUS</div>
-                <div className={styles.panelSub}>Simulated order execution status</div>
+                <div className={styles.panelSub}>Execution</div>
               </div>
 
-              <div className={styles.statusRow}>
-                <span className={styles.muted}>ENGINE</span>
+              <div className={styles.statusCompact}>
+                <span className={styles.badgeLabel}>ENGINE</span>
                 <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
                   {botEnabled ? "RUNNING" : "PAUSED"}
                 </span>
               </div>
 
               {openOrder ? (
-                <div className={styles.activeOrderBox}>
-                  <div className={styles.activeRow}>
+                <div className={styles.activeCompact}>
+                  <div className={styles.activeHeaderCompact}>
                     <span className={styles.pingDotWrap}>
                       <span className={styles.pingDot}></span>
                       <span className={styles.pingDotCore}></span>
                     </span>
-                    <span className={styles.activeText}>ACTIVE SIMULATED ORDER</span>
+                    <span className={styles.activeText}>ACTIVE ORDER</span>
                   </div>
-
-                  <div className={styles.infoGrid}>
-                    <InfoLine label="SIDE" value={openOrder.side} />
-                    <InfoLine label="STATUS" value={openOrder.status} />
-                    <InfoLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
-                    <InfoLine label="TP" value={openOrder.tp.toFixed(2)} />
-                    <InfoLine label="SL" value={openOrder.sl.toFixed(2)} />
-                    <InfoLine label="REASON" value={openOrder.reason} full />
+                  <div className={styles.compactInfoList}>
+                    <CompactLine label="SIDE" value={openOrder.side} />
+                    <CompactLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
+                    <CompactLine label="TP" value={openOrder.tp.toFixed(2)} />
+                    <CompactLine label="SL" value={openOrder.sl.toFixed(2)} />
                   </div>
                 </div>
               ) : (
-                <div className={styles.emptyBox}>No active simulated order</div>
+                <div className={styles.emptyCompact}>No active simulated order</div>
               )}
             </section>
 
-            <section className={styles.sidePanel}>
-              <div className={styles.panelHeader}>
-                <div className={styles.panelTitle}>SYSTEM SUMMARY</div>
-                <div className={styles.panelSub}>Quick overview</div>
+            <section className={styles.sideCardCompact}>
+              <div className={styles.panelHeaderCompact}>
+                <div className={styles.panelTitle}>SUMMARY</div>
+                <div className={styles.panelSub}>Overview</div>
               </div>
-
-              <div className={styles.cardGrid2}>
-                <SummaryTile label="TOTAL ORDERS" value={String(orders.length)} />
-                <SummaryTile label="OPEN ORDERS" value={String(orders.filter((o) => o.status === "OPEN").length)} />
-                <SummaryTile label="WIN ORDERS" value={String(orders.filter((o) => o.status === "TP").length)} />
-                <SummaryTile label="LOSS ORDERS" value={String(orders.filter((o) => o.status === "SL").length)} />
+              <div className={styles.summaryCompactGrid}>
+                <SummaryTile label="ORDERS" value={String(orders.length)} />
+                <SummaryTile label="OPEN" value={String(orders.filter((o) => o.status === "OPEN").length)} />
+                <SummaryTile label="WIN" value={String(orders.filter((o) => o.status === "TP").length)} />
+                <SummaryTile label="LOSS" value={String(orders.filter((o) => o.status === "SL").length)} />
               </div>
             </section>
-          </div>
+          </aside>
         </div>
 
-        <section className={styles.logPanel}>
-          <div className={styles.panelHeader}>
-            <div className={styles.panelTitle}>BOT ACTIVITY LOG</div>
-            <div className={styles.panelSub}>Simulated only · no broker connected</div>
+        <section className={styles.logPanelCompact}>
+          <div className={styles.panelHeaderCompact}>
+            <div>
+              <div className={styles.panelTitle}>BOT ACTIVITY LOG</div>
+              <div className={styles.panelSub}>Simulated only · no broker connected</div>
+            </div>
           </div>
 
-          <div className={styles.logTableWrap}>
+          <div className={styles.logTableWrapCompact}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -633,7 +634,7 @@ export default function HomePage() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className={styles.miniStat}>
+    <div className={styles.miniStatCompact}>
       <div className={styles.miniLabel}>{label}</div>
       <div className={styles.miniValue}>{value}</div>
     </div>
@@ -642,35 +643,27 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 
 function StatCard({ label, value }: { label: string; value: number | undefined }) {
   return (
-    <div className={styles.statCard}>
+    <div className={styles.statCardCompact}>
       <div className={styles.smallLabel}>{label}</div>
-      <div className={styles.statValue}>{typeof value === "number" ? value.toFixed(2) : "--"}</div>
+      <div className={styles.statValueCompact}>{typeof value === "number" ? value.toFixed(2) : "--"}</div>
     </div>
   );
 }
 
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className={styles.statCard}>
+    <div className={styles.statCardCompact}>
       <div className={styles.smallLabel}>{label}</div>
-      <div className={styles.summaryValue}>{value}</div>
+      <div className={styles.summaryValueCompact}>{value}</div>
     </div>
   );
 }
 
-function InfoLine({
-  label,
-  value,
-  full = false,
-}: {
-  label: string;
-  value: string;
-  full?: boolean;
-}) {
+function CompactLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className={full ? styles.infoLineFull : styles.infoLine}>
-      <div className={styles.smallLabel}>{label}</div>
-      <div className={styles.infoValue}>{value}</div>
+    <div className={styles.compactLine}>
+      <span className={styles.compactLabel}>{label}</span>
+      <span className={styles.compactValue}>{value}</span>
     </div>
   );
 }
