@@ -5,9 +5,17 @@ import type { CandlestickData, Time } from "lightweight-charts";
 import XAUChart from "@/components/XAUChart";
 import { TIMEFRAME_OPTIONS, type TimeframeValue } from "@/lib/timeframes";
 
+type RawCandle = {
+  time: number | string;
+  open: number | string;
+  high: number | string;
+  low: number | string;
+  close: number | string;
+};
+
 type CandleResponse = {
   ok: boolean;
-  candles?: CandlestickData<Time>[];
+  candles?: RawCandle[];
   interval?: string;
   source?: string;
   error?: string;
@@ -64,6 +72,25 @@ function getQuoteRefreshMs(interval: TimeframeValue) {
   }
 }
 
+function normalizeCandles(rows: RawCandle[] = []): CandlestickData<Time>[] {
+  return rows
+    .map((c) => ({
+      time: Number(c.time) as Time,
+      open: Number(c.open),
+      high: Number(c.high),
+      low: Number(c.low),
+      close: Number(c.close),
+    }))
+    .filter(
+      (c) =>
+        Number.isFinite(c.time as number) &&
+        Number.isFinite(c.open) &&
+        Number.isFinite(c.high) &&
+        Number.isFinite(c.low) &&
+        Number.isFinite(c.close)
+    );
+}
+
 export default function HomePage() {
   const [interval, setIntervalValue] = useState<TimeframeValue>("1min");
   const [candles, setCandles] = useState<CandlestickData<Time>[]>([]);
@@ -77,9 +104,6 @@ export default function HomePage() {
 
   const loadingCandlesRef = useRef(false);
   const loadingQuoteRef = useRef(false);
- useEffect(() => {
-      console.log("CANDLES:", candles);
-      },[candles]);
 
   async function loadCandles(selectedInterval: TimeframeValue) {
     if (loadingCandlesRef.current) return;
@@ -93,26 +117,32 @@ export default function HomePage() {
         `/api/market/candles?interval=${selectedInterval}&outputsize=200`,
         { cache: "no-store" }
       );
+
       const data: CandleResponse = await res.json();
 
-      if (!data.ok || !data.candles) {
+      if (!res.ok || !data.ok || !data.candles) {
         setError(data.error || "Failed to load candles");
+        setCandles([]);
+        setSource(data.source || "error");
         return;
       }
 
-      const formatted = data.candles.map((c: any) => ({
-        time: c.time as Time,
-        open: Number(c.open),
-        high: Number(c.high),
-        low: Number(c.low),
-        close: Number(c.close),
-      }));
+      const formatted = normalizeCandles(data.candles);
+
+      if (formatted.length === 0) {
+        setError("No valid candle data returned");
+        setCandles([]);
+        setSource(data.source || "error");
+        return;
+      }
 
       setCandles(formatted);
       setSource(data.source || "unknown");
       setLastCandlesAt(Date.now());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load candles");
+      setCandles([]);
+      setSource("error");
     } finally {
       setLoadingCandles(false);
       loadingCandlesRef.current = false;
@@ -129,10 +159,14 @@ export default function HomePage() {
       const res = await fetch(`/api/market/quote`, { cache: "no-store" });
       const data: QuoteResponse = await res.json();
 
-      if (data.ok && typeof data.price === "number") {
-        setLivePrice(data.price);
-        setLastQuoteAt(Date.now());
+      if (!res.ok || !data.ok || typeof data.price !== "number") {
+        return;
       }
+
+      setLivePrice(Number(data.price));
+      setLastQuoteAt(Date.now());
+    } catch {
+      // ignore quote errors to keep chart usable
     } finally {
       setLoadingQuote(false);
       loadingQuoteRef.current = false;
@@ -172,7 +206,7 @@ export default function HomePage() {
                 XAU/USD Real-Time Dashboard
               </h1>
               <p className="mt-2 text-slate-300">
-                Real market candles with safer API usage for low-credit plans.
+                Candlestick chart with real market data and timeframe switching.
               </p>
             </div>
 
@@ -218,13 +252,17 @@ export default function HomePage() {
             </div>
 
             <div className="rounded-2xl border border-slate-800 bg-slate-950 p-2">
-              {loadingCandles && candles.length === 0 ? (
+              {error ? (
+                <div className="flex h-[560px] items-center justify-center text-red-300 px-6 text-center">
+                  {error}
+                </div>
+              ) : loadingCandles && candles.length === 0 ? (
                 <div className="flex h-[560px] items-center justify-center text-slate-400">
                   Loading candles...
                 </div>
-              ) : error ? (
-                <div className="flex h-[560px] items-center justify-center text-red-300 px-6 text-center">
-                  {error}
+              ) : candles.length === 0 ? (
+                <div className="flex h-[560px] items-center justify-center text-slate-400">
+                  No candle data available
                 </div>
               ) : (
                 <XAUChart candles={candles} livePrice={livePrice} />
@@ -262,7 +300,6 @@ export default function HomePage() {
                 <p>Source: {source}</p>
                 <p>Last candles: {lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"}</p>
                 <p>Last quote: {lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"}</p>
-                <p>Low-credit safe mode is enabled.</p>
               </div>
             </section>
           </div>
@@ -288,4 +325,3 @@ function StatCard({
     </div>
   );
 }
-
