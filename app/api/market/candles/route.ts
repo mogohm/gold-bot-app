@@ -12,6 +12,42 @@ type TwelveDataValue = {
   close: string;
 };
 
+const candlesCache = new Map<
+  string,
+  {
+    time: number;
+    candles: Array<{
+      time: number;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+    }>;
+    source: string;
+  }
+>();
+
+function getCacheMs(interval: string) {
+  switch (interval) {
+    case "1min":
+      return 30_000;
+    case "5min":
+      return 60_000;
+    case "15min":
+      return 180_000;
+    case "30min":
+      return 300_000;
+    case "1h":
+      return 600_000;
+    case "1day":
+      return 1_800_000;
+    case "1month":
+      return 21_600_000;
+    default:
+      return 30_000;
+  }
+}
+
 function normalize(values: TwelveDataValue[] = []) {
   return values
     .map((x) => ({
@@ -24,7 +60,7 @@ function normalize(values: TwelveDataValue[] = []) {
     .reverse();
 }
 
-function makeMockCandles(count = 300) {
+function makeMockCandles(count = 200) {
   let price = 2350;
   const now = Math.floor(Date.now() / 1000);
   const out: Array<{
@@ -52,15 +88,35 @@ function makeMockCandles(count = 300) {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const rawInterval = searchParams.get("interval") || "1min";
-  const outputsize = searchParams.get("outputsize") || "300";
+  const outputsize = searchParams.get("outputsize") || "200";
   const interval = isValidTimeframe(rawInterval) ? rawInterval : "1min";
 
+  const cacheKey = `${interval}:${outputsize}`;
+  const cached = candlesCache.get(cacheKey);
+  const cacheMs = getCacheMs(interval);
+
+  if (cached && Date.now() - cached.time < cacheMs) {
+    return NextResponse.json({
+      ok: true,
+      source: `${cached.source}-cache`,
+      interval,
+      candles: cached.candles,
+    });
+  }
+
   if (!API_KEY) {
+    const candles = makeMockCandles(Number(outputsize));
+    candlesCache.set(cacheKey, {
+      time: Date.now(),
+      candles,
+      source: "mock",
+    });
+
     return NextResponse.json({
       ok: true,
       source: "mock",
       interval,
-      candles: makeMockCandles(Number(outputsize)),
+      candles,
     });
   }
 
@@ -82,12 +138,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const candles = normalize(data.values);
+
+    candlesCache.set(cacheKey, {
+      time: Date.now(),
+      candles,
+      source: "twelvedata",
+    });
+
     return NextResponse.json({
       ok: true,
       source: "twelvedata",
       interval,
       meta: data.meta,
-      candles: normalize(data.values),
+      candles,
     });
   } catch (error) {
     return NextResponse.json(
