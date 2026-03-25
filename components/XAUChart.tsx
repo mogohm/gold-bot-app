@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   createChart,
   createSeriesMarkers,
@@ -12,13 +12,16 @@ import {
   type CandlestickData,
   type LineData,
   type Time,
+  type SeriesMarker,
+  type SeriesMarkerPosition,
+  type SeriesMarkerShape,
 } from "lightweight-charts";
 
 export type BotMarker = {
-  time: number;
-  position: "aboveBar" | "belowBar" | "inBar";
+  time: Time;
+  position: SeriesMarkerPosition;
   color: string;
-  shape: "circle" | "square" | "arrowUp" | "arrowDown";
+  shape: SeriesMarkerShape;
   text: string;
 };
 
@@ -34,6 +37,16 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const liveLineRef = useRef<ISeriesApi<"Line"> | null>(null);
   const markersApiRef = useRef<ReturnType<typeof createSeriesMarkers<Time>> | null>(null);
+
+  const safeMarkers = useMemo<SeriesMarker<Time>[]>(() => {
+    return markers.map((m) => ({
+      time: m.time as Time,
+      position: m.position,
+      color: m.color,
+      shape: m.shape,
+      text: m.text,
+    }));
+  }, [markers]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -114,11 +127,11 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
     candleSeriesRef.current.setData(candles);
 
     if (markersApiRef.current) {
-      markersApiRef.current.setMarkers(markers);
+      markersApiRef.current.setMarkers(safeMarkers);
     }
 
     chartRef.current.timeScale().fitContent();
-  }, [candles, markers]);
+  }, [candles, safeMarkers]);
 
   useEffect(() => {
     if (!liveLineRef.current) return;
