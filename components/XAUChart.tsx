@@ -72,7 +72,9 @@ export default function XAUChart({ candles, livePrice }: Props) {
     liveLineRef.current = liveLine;
 
     if (candles.length) {
-      candleSeries.setData(candles);
+     if (candles && candles.length > 0) {
+            candleSeries.setData(candles);
+          }
       chart.timeScale().fitContent();
     }
 
