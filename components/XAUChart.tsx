@@ -13,12 +13,25 @@ import {
   type Time,
 } from "lightweight-charts";
 
+export type BotMarker = {
+  time: number;
+  position: "aboveBar" | "belowBar" | "inBar";
+  color: string;
+  shape:
+    | "circle"
+    | "square"
+    | "arrowUp"
+    | "arrowDown";
+  text: string;
+};
+
 type Props = {
   candles: CandlestickData<Time>[];
   livePrice?: number | null;
+  markers?: BotMarker[];
 };
 
-export default function XAUChart({ candles, livePrice }: Props) {
+export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -44,7 +57,10 @@ export default function XAUChart({ candles, livePrice }: Props) {
       timeScale: {
         borderColor: "#334155",
         timeVisible: true,
-        secondsVisible: false,
+        secondsVisible: true,
+      },
+      crosshair: {
+        mode: 0,
       },
     });
 
@@ -94,8 +110,9 @@ export default function XAUChart({ candles, livePrice }: Props) {
     if (!candles || candles.length === 0) return;
 
     candleSeriesRef.current.setData(candles);
+    candleSeriesRef.current.setMarkers(markers);
     chartRef.current.timeScale().fitContent();
-  }, [candles]);
+  }, [candles, markers]);
 
   useEffect(() => {
     if (!liveLineRef.current) return;
@@ -103,9 +120,7 @@ export default function XAUChart({ candles, livePrice }: Props) {
     if (typeof livePrice !== "number") return;
 
     const last = candles[candles.length - 1];
-    const lineData: LineData<Time>[] = [
-      { time: last.time, value: livePrice },
-    ];
+    const lineData: LineData<Time>[] = [{ time: last.time, value: livePrice }];
     liveLineRef.current.setData(lineData);
   }, [livePrice, candles]);
 
