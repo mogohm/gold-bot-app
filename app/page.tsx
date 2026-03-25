@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CandlestickData, Time } from "lightweight-charts";
 import XAUChart, { type BotMarker } from "@/components/XAUChart";
 import { TIMEFRAME_OPTIONS, type TimeframeValue } from "@/lib/timeframes";
+import styles from "./page.module.css";
 
 type RawCandle = {
   time: number | string;
@@ -216,28 +217,6 @@ function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function Panel({
-  title,
-  subtitle,
-  children,
-  className = "",
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={`rounded-2xl border border-slate-700 bg-slate-900 shadow-xl ${className}`}>
-      <div className="border-b border-slate-700 px-4 py-3">
-        <div className="text-sm font-semibold tracking-wide text-white">{title}</div>
-        {subtitle ? <div className="mt-1 text-xs text-slate-400">{subtitle}</div> : null}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
 export default function HomePage() {
   const [interval, setIntervalValue] = useState<TimeframeValue>("1min");
   const [baseCandles, setBaseCandles] = useState<CandlestickData<Time>[]>([]);
@@ -250,7 +229,6 @@ export default function HomePage() {
   const [lastCandlesAt, setLastCandlesAt] = useState<number | null>(null);
   const [orders, setOrders] = useState<SimOrder[]>([]);
   const [botEnabled, setBotEnabled] = useState(true);
-  const [statusPulse, setStatusPulse] = useState(false);
 
   const loadingCandlesRef = useRef(false);
   const loadingQuoteRef = useRef(false);
@@ -379,7 +357,6 @@ export default function HomePage() {
 
     lastSignalBucketRef.current = bucketKey;
     setOrders((prev) => [newOrder, ...prev]);
-    setStatusPulse(true);
   }, [candles, livePrice, botEnabled, interval, orders]);
 
   useEffect(() => {
@@ -436,11 +413,6 @@ export default function HomePage() {
     );
   }, [livePrice]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setStatusPulse(false), 1200);
-    return () => clearTimeout(timer);
-  }, [orders]);
-
   const chartMarkers = useMemo<BotMarker[]>(() => {
     const out: BotMarker[] = [];
 
@@ -472,262 +444,188 @@ export default function HomePage() {
   const totalPnL = orders.reduce((sum, o) => sum + (o.pnl || 0), 0);
 
   return (
-    <main className="h-screen overflow-hidden bg-slate-950 text-slate-100">
-      <div className="mx-auto flex h-screen max-w-[1920px] flex-col gap-3 p-3">
-        <Panel
-          title="XAU/USD BOT SIMULATOR DASHBOARD"
-          subtitle="Realtime chart · simulated bot entry/exit · FullHD single-screen layout"
-          className="shrink-0"
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5 xl:grid-cols-6">
-              <MiniStat label="SOURCE" value={source} />
-              <MiniStat
-                label="LIVE PRICE"
-                value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"}
-              />
-              <MiniStat label="CANDLES" value={String(candles.length)} />
-              <MiniStat
-                label="LAST QUOTE"
-                value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"}
-              />
-              <MiniStat
-                label="LAST CANDLE"
-                value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"}
-              />
-              <MiniStat label="TOTAL PNL" value={totalPnL.toFixed(2)} />
+    <main className={styles.screen}>
+      <div className={styles.wrapper}>
+        <div className={styles.headerCard}>
+          <div>
+            <div className={styles.headerTitle}>XAU/USD BOT SIMULATOR DASHBOARD</div>
+            <div className={styles.headerSub}>
+              Realtime chart · simulated orders · FullHD single-screen layout
             </div>
+          </div>
 
-            <div className="flex flex-wrap gap-2">
-              {TIMEFRAME_OPTIONS.map((tf) => {
-                const active = interval === tf.value;
-                return (
-                  <button
-                    key={tf.value}
-                    onClick={() => setIntervalValue(tf.value)}
-                    className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                      active
-                        ? "border-white bg-white text-slate-950"
-                        : "border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-500"
-                    }`}
-                  >
-                    {tf.label}
-                  </button>
-                );
-              })}
+          <div className={styles.toolbar}>
+            {TIMEFRAME_OPTIONS.map((tf) => (
               <button
-                onClick={() => setBotEnabled((v) => !v)}
-                className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                  botEnabled
-                    ? "border-emerald-400 bg-emerald-500/10 text-emerald-300"
-                    : "border-slate-700 bg-slate-950 text-slate-300"
-                }`}
+                key={tf.value}
+                onClick={() => setIntervalValue(tf.value)}
+                className={`${styles.timeBtn} ${interval === tf.value ? styles.timeBtnActive : ""}`}
               >
-                BOT {botEnabled ? "ON" : "OFF"}
+                {tf.label}
               </button>
+            ))}
+            <button
+              onClick={() => setBotEnabled((v) => !v)}
+              className={`${styles.botBtn} ${botEnabled ? styles.botOn : styles.botOff}`}
+            >
+              BOT {botEnabled ? "ON" : "OFF"}
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.topStats}>
+          <MiniStat label="SOURCE" value={source} />
+          <MiniStat label="LIVE PRICE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
+          <MiniStat label="CANDLES" value={String(candles.length)} />
+          <MiniStat label="LAST QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
+          <MiniStat label="LAST CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
+          <MiniStat label="TOTAL PNL" value={totalPnL.toFixed(2)} />
+        </div>
+
+        <div className={styles.contentGrid}>
+          <section className={styles.chartPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.panelTitle}>PRICE CHART</div>
+              <div className={styles.panelSub}>Symbol: XAU/USD · Interval: {interval}</div>
             </div>
-          </div>
-        </Panel>
+            <div className={styles.chartBody}>
+              {error ? (
+                <div className={styles.centerMessageError}>{error}</div>
+              ) : loadingCandles && candles.length === 0 ? (
+                <div className={styles.centerMessage}>Loading candles...</div>
+              ) : candles.length === 0 ? (
+                <div className={styles.centerMessage}>No candle data available</div>
+              ) : (
+                <XAUChart candles={candles} livePrice={livePrice} markers={chartMarkers} />
+              )}
+            </div>
+          </section>
 
-        <div className="grid min-h-0 flex-1 grid-cols-12 gap-3">
-          <div className="col-span-12 min-h-0 xl:col-span-9">
-            <Panel
-              title="PRICE CHART"
-              subtitle={`Symbol: XAU/USD · Interval: ${interval} · Realtime candle simulation on last bar`}
-              className="flex h-full min-h-0 flex-col"
-            >
-              <div className="min-h-0 flex-1 rounded-xl border border-slate-800 bg-slate-950 p-2">
-                {error ? (
-                  <div className="flex h-full items-center justify-center text-center text-red-300">
-                    {error}
-                  </div>
-                ) : loadingCandles && candles.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-slate-400">
-                    Loading candles...
-                  </div>
-                ) : candles.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-slate-400">
-                    No candle data available
-                  </div>
-                ) : (
-                  <XAUChart candles={candles} livePrice={livePrice} markers={chartMarkers} />
-                )}
+          <div className={styles.rightCol}>
+            <section className={styles.sidePanel}>
+              <div className={styles.panelHeader}>
+                <div className={styles.panelTitle}>LIVE MARKET STATUS</div>
+                <div className={styles.panelSub}>Current candle and quote information</div>
               </div>
-            </Panel>
-          </div>
-
-          <div className="col-span-12 grid min-h-0 grid-rows-3 gap-3 xl:col-span-3">
-            <Panel
-              title="LIVE MARKET STATUS"
-              subtitle="Current market information"
-              className="min-h-0"
-            >
-              <div className="grid grid-cols-2 gap-3">
+              <div className={styles.cardGrid2}>
                 <StatCard label="OPEN" value={lastCandle?.open} />
                 <StatCard label="HIGH" value={lastCandle?.high} />
                 <StatCard label="LOW" value={lastCandle?.low} />
                 <StatCard label="CLOSE" value={lastCandle?.close} />
               </div>
-              <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950 p-3">
-                <div className="text-xs text-slate-400">QUOTE POLLING</div>
-                <div className="mt-1 text-sm text-slate-200">
-                  {loadingQuote ? "Refreshing..." : `Every ${getQuoteRefreshMs(interval) / 1000} sec`}
-                </div>
+              <div className={styles.infoBox}>
+                Quote polling: {loadingQuote ? "Refreshing..." : `Every ${getQuoteRefreshMs(interval) / 1000} sec`}
               </div>
-            </Panel>
+            </section>
 
-            <Panel
-              title="BOT STATUS"
-              subtitle="Order engine and active execution status"
-              className="min-h-0"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm text-slate-400">ENGINE</span>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    botEnabled
-                      ? "bg-emerald-500/20 text-emerald-300"
-                      : "bg-slate-700 text-slate-300"
-                  }`}
-                >
+            <section className={styles.sidePanel}>
+              <div className={styles.panelHeader}>
+                <div className={styles.panelTitle}>BOT STATUS</div>
+                <div className={styles.panelSub}>Simulated order execution status</div>
+              </div>
+
+              <div className={styles.statusRow}>
+                <span className={styles.muted}>ENGINE</span>
+                <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
                   {botEnabled ? "RUNNING" : "PAUSED"}
                 </span>
               </div>
 
               {openOrder ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <span className="relative flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400"></span>
+                <div className={styles.activeOrderBox}>
+                  <div className={styles.activeRow}>
+                    <span className={styles.pingDotWrap}>
+                      <span className={styles.pingDot}></span>
+                      <span className={styles.pingDotCore}></span>
                     </span>
-                    <span className="text-sm font-medium text-emerald-300">
-                      ACTIVE SIMULATED ORDER
-                    </span>
+                    <span className={styles.activeText}>ACTIVE SIMULATED ORDER</span>
                   </div>
 
-                  <div
-                    className={`rounded-xl border border-emerald-500/30 bg-slate-950 p-3 ${
-                      statusPulse ? "animate-pulse" : ""
-                    }`}
-                  >
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <InfoLine label="SIDE" value={openOrder.side} />
-                      <InfoLine label="STATUS" value={openOrder.status} />
-                      <InfoLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
-                      <InfoLine label="TP" value={openOrder.tp.toFixed(2)} />
-                      <InfoLine label="SL" value={openOrder.sl.toFixed(2)} />
-                      <InfoLine
-                        label="REASON"
-                        value={openOrder.reason}
-                        full
-                      />
-                    </div>
+                  <div className={styles.infoGrid}>
+                    <InfoLine label="SIDE" value={openOrder.side} />
+                    <InfoLine label="STATUS" value={openOrder.status} />
+                    <InfoLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
+                    <InfoLine label="TP" value={openOrder.tp.toFixed(2)} />
+                    <InfoLine label="SL" value={openOrder.sl.toFixed(2)} />
+                    <InfoLine label="REASON" value={openOrder.reason} full />
                   </div>
                 </div>
               ) : (
-                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-400">
-                  No active simulated order
-                </div>
+                <div className={styles.emptyBox}>No active simulated order</div>
               )}
-            </Panel>
+            </section>
 
-            <Panel
-              title="SYSTEM SUMMARY"
-              subtitle="Quick overview"
-              className="min-h-0"
-            >
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <SummaryTile label="TOTAL ORDERS" value={String(orders.length)} />
-                <SummaryTile
-                  label="OPEN ORDERS"
-                  value={String(orders.filter((o) => o.status === "OPEN").length)}
-                />
-                <SummaryTile
-                  label="WIN ORDERS"
-                  value={String(orders.filter((o) => o.status === "TP").length)}
-                />
-                <SummaryTile
-                  label="LOSS ORDERS"
-                  value={String(orders.filter((o) => o.status === "SL").length)}
-                />
+            <section className={styles.sidePanel}>
+              <div className={styles.panelHeader}>
+                <div className={styles.panelTitle}>SYSTEM SUMMARY</div>
+                <div className={styles.panelSub}>Quick overview</div>
               </div>
-            </Panel>
+
+              <div className={styles.cardGrid2}>
+                <SummaryTile label="TOTAL ORDERS" value={String(orders.length)} />
+                <SummaryTile label="OPEN ORDERS" value={String(orders.filter((o) => o.status === "OPEN").length)} />
+                <SummaryTile label="WIN ORDERS" value={String(orders.filter((o) => o.status === "TP").length)} />
+                <SummaryTile label="LOSS ORDERS" value={String(orders.filter((o) => o.status === "SL").length)} />
+              </div>
+            </section>
           </div>
         </div>
 
-        <Panel
-          title="BOT ACTIVITY LOG"
-          subtitle="Simulated orders only · no broker connected"
-          className="min-h-0 shrink-0"
-        >
-          <div className="max-h-[210px] overflow-auto rounded-xl border border-slate-800">
-            <table className="min-w-full text-sm">
-              <thead className="sticky top-0 bg-slate-900">
-                <tr className="border-b border-slate-800 text-slate-400">
-                  <th className="px-3 py-3 text-left">STATUS</th>
-                  <th className="px-3 py-3 text-left">SIDE</th>
-                  <th className="px-3 py-3 text-left">ENTRY</th>
-                  <th className="px-3 py-3 text-left">TP</th>
-                  <th className="px-3 py-3 text-left">SL</th>
-                  <th className="px-3 py-3 text-left">EXIT</th>
-                  <th className="px-3 py-3 text-left">PNL</th>
-                  <th className="px-3 py-3 text-left">REASON</th>
+        <section className={styles.logPanel}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelTitle}>BOT ACTIVITY LOG</div>
+            <div className={styles.panelSub}>Simulated only · no broker connected</div>
+          </div>
+
+          <div className={styles.logTableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>STATUS</th>
+                  <th>SIDE</th>
+                  <th>ENTRY</th>
+                  <th>TP</th>
+                  <th>SL</th>
+                  <th>EXIT</th>
+                  <th>PNL</th>
+                  <th>REASON</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
+                    <td colSpan={8} className={styles.noData}>
                       No simulated orders yet
                     </td>
                   </tr>
                 ) : (
                   orders.map((order) => (
-                    <tr key={order.id} className="border-b border-slate-900">
-                      <td className="px-3 py-3">
+                    <tr key={order.id}>
+                      <td>
                         {order.status === "OPEN" ? (
-                          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-emerald-300">
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
-                            </span>
-                            OPEN
-                          </span>
+                          <span className={`${styles.badge} ${styles.badgeGreen}`}>OPEN</span>
                         ) : order.status === "TP" ? (
-                          <span className="rounded-full bg-sky-500/15 px-3 py-1 text-sky-300">
-                            TP HIT
-                          </span>
-                        ) : order.status === "SL" ? (
-                          <span className="rounded-full bg-amber-500/15 px-3 py-1 text-amber-300">
-                            SL HIT
-                          </span>
+                          <span className={`${styles.badge} ${styles.badgeBlue}`}>TP HIT</span>
                         ) : (
-                          <span className="rounded-full bg-slate-700 px-3 py-1 text-slate-300">
-                            CLOSED
-                          </span>
+                          <span className={`${styles.badge} ${styles.badgeAmber}`}>SL HIT</span>
                         )}
                       </td>
-                      <td className={`px-3 py-3 font-medium ${order.side === "BUY" ? "text-emerald-300" : "text-red-300"}`}>
-                        {order.side}
-                      </td>
-                      <td className="px-3 py-3">{order.entryPrice.toFixed(2)}</td>
-                      <td className="px-3 py-3">{order.tp.toFixed(2)}</td>
-                      <td className="px-3 py-3">{order.sl.toFixed(2)}</td>
-                      <td className="px-3 py-3">
-                        {typeof order.exitPrice === "number" ? order.exitPrice.toFixed(2) : "--"}
-                      </td>
-                      <td className={`px-3 py-3 ${typeof order.pnl === "number" && order.pnl >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+                      <td className={order.side === "BUY" ? styles.buyText : styles.sellText}>{order.side}</td>
+                      <td>{order.entryPrice.toFixed(2)}</td>
+                      <td>{order.tp.toFixed(2)}</td>
+                      <td>{order.sl.toFixed(2)}</td>
+                      <td>{typeof order.exitPrice === "number" ? order.exitPrice.toFixed(2) : "--"}</td>
+                      <td className={typeof order.pnl === "number" && order.pnl >= 0 ? styles.buyText : styles.sellText}>
                         {typeof order.pnl === "number" ? order.pnl.toFixed(2) : "--"}
                       </td>
-                      <td className="px-3 py-3 text-slate-300">{order.reason}</td>
+                      <td>{order.reason}</td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
-        </Panel>
+        </section>
       </div>
     </main>
   );
@@ -735,35 +633,27 @@ export default function HomePage() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
-      <div className="text-[10px] font-medium tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-white">{value}</div>
+    <div className={styles.miniStat}>
+      <div className={styles.miniLabel}>{label}</div>
+      <div className={styles.miniValue}>{value}</div>
     </div>
   );
 }
 
-function StatCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | undefined;
-}) {
+function StatCard({ label, value }: { label: string; value: number | undefined }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
-      <div className="text-[11px] tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-base font-semibold text-white">
-        {typeof value === "number" ? value.toFixed(2) : "--"}
-      </div>
+    <div className={styles.statCard}>
+      <div className={styles.smallLabel}>{label}</div>
+      <div className={styles.statValue}>{typeof value === "number" ? value.toFixed(2) : "--"}</div>
     </div>
   );
 }
 
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
-      <div className="text-[11px] tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-white">{value}</div>
+    <div className={styles.statCard}>
+      <div className={styles.smallLabel}>{label}</div>
+      <div className={styles.summaryValue}>{value}</div>
     </div>
   );
 }
@@ -778,9 +668,9 @@ function InfoLine({
   full?: boolean;
 }) {
   return (
-    <div className={full ? "col-span-2" : ""}>
-      <div className="text-[11px] tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 text-sm text-white break-words">{value}</div>
+    <div className={full ? styles.infoLineFull : styles.infoLine}>
+      <div className={styles.smallLabel}>{label}</div>
+      <div className={styles.infoValue}>{value}</div>
     </div>
   );
 }
