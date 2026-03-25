@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import {
   createChart,
+  createSeriesMarkers,
   CandlestickSeries,
   LineSeries,
   ColorType,
@@ -17,11 +18,7 @@ export type BotMarker = {
   time: number;
   position: "aboveBar" | "belowBar" | "inBar";
   color: string;
-  shape:
-    | "circle"
-    | "square"
-    | "arrowUp"
-    | "arrowDown";
+  shape: "circle" | "square" | "arrowUp" | "arrowDown";
   text: string;
 };
 
@@ -36,6 +33,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const liveLineRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const markersApiRef = useRef<ReturnType<typeof createSeriesMarkers<Time>> | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -81,9 +79,12 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
       crosshairMarkerVisible: false,
     });
 
+    const markersApi = createSeriesMarkers(candleSeries, []);
+
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
     liveLineRef.current = liveLine;
+    markersApiRef.current = markersApi;
 
     const resize = () => {
       if (!containerRef.current || !chartRef.current) return;
@@ -102,6 +103,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
       chartRef.current = null;
       candleSeriesRef.current = null;
       liveLineRef.current = null;
+      markersApiRef.current = null;
     };
   }, []);
 
@@ -110,7 +112,11 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
     if (!candles || candles.length === 0) return;
 
     candleSeriesRef.current.setData(candles);
-    candleSeriesRef.current.setMarkers(markers);
+
+    if (markersApiRef.current) {
+      markersApiRef.current.setMarkers(markers);
+    }
+
     chartRef.current.timeScale().fitContent();
   }, [candles, markers]);
 
