@@ -47,42 +47,42 @@ type SimOrder = {
 function getCandleRefreshMs(interval: TimeframeValue) {
   switch (interval) {
     case "1min":
-      return 60_000;
+      return 60000;
     case "5min":
-      return 120_000;
+      return 120000;
     case "15min":
-      return 300_000;
+      return 300000;
     case "30min":
-      return 600_000;
+      return 600000;
     case "1h":
-      return 900_000;
+      return 900000;
     case "1day":
-      return 3_600_000;
+      return 3600000;
     case "1month":
-      return 21_600_000;
+      return 21600000;
     default:
-      return 60_000;
+      return 60000;
   }
 }
 
 function getQuoteRefreshMs(interval: TimeframeValue) {
   switch (interval) {
     case "1min":
-      return 5_000;
+      return 5000;
     case "5min":
-      return 8_000;
+      return 8000;
     case "15min":
-      return 12_000;
+      return 12000;
     case "30min":
-      return 15_000;
+      return 15000;
     case "1h":
-      return 20_000;
+      return 20000;
     case "1day":
-      return 30_000;
+      return 30000;
     case "1month":
-      return 60_000;
+      return 60000;
     default:
-      return 5_000;
+      return 5000;
   }
 }
 
@@ -216,6 +216,28 @@ function makeId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function Panel({
+  title,
+  subtitle,
+  children,
+  className = "",
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`rounded-2xl border border-slate-700 bg-slate-900 shadow-xl ${className}`}>
+      <div className="border-b border-slate-700 px-4 py-3">
+        <div className="text-sm font-semibold tracking-wide text-white">{title}</div>
+        {subtitle ? <div className="mt-1 text-xs text-slate-400">{subtitle}</div> : null}
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   const [interval, setIntervalValue] = useState<TimeframeValue>("1min");
   const [baseCandles, setBaseCandles] = useState<CandlestickData<Time>[]>([]);
@@ -295,7 +317,7 @@ export default function HomePage() {
       setLivePrice(Number(data.price));
       setLastQuoteAt(Date.now());
     } catch {
-      // keep UI alive
+      //
     } finally {
       setLoadingQuote(false);
       loadingQuoteRef.current = false;
@@ -420,49 +442,60 @@ export default function HomePage() {
   }, [orders]);
 
   const chartMarkers = useMemo<BotMarker[]>(() => {
-  const out: BotMarker[] = [];
+    const out: BotMarker[] = [];
 
-  for (const order of orders) {
-    out.push({
-      time: order.entryTime as Time,
-      position: order.side === "BUY" ? "belowBar" : "aboveBar",
-      color: order.side === "BUY" ? "#22c55e" : "#ef4444",
-      shape: order.side === "BUY" ? "arrowUp" : "arrowDown",
-      text: `${order.side} ${order.entryPrice.toFixed(2)}`,
-    });
-
-    if (order.exitTime && typeof order.exitPrice === "number") {
+    for (const order of orders) {
       out.push({
-        time: order.exitTime as Time,
-        position: "inBar",
-        color: order.status === "TP" ? "#38bdf8" : "#f59e0b",
-        shape: "circle",
-        text: `${order.status} ${order.exitPrice.toFixed(2)}`,
+        time: order.entryTime as Time,
+        position: order.side === "BUY" ? "belowBar" : "aboveBar",
+        color: order.side === "BUY" ? "#22c55e" : "#ef4444",
+        shape: order.side === "BUY" ? "arrowUp" : "arrowDown",
+        text: `${order.side} ${order.entryPrice.toFixed(2)}`,
       });
+
+      if (order.exitTime && typeof order.exitPrice === "number") {
+        out.push({
+          time: order.exitTime as Time,
+          position: "inBar",
+          color: order.status === "TP" ? "#38bdf8" : "#f59e0b",
+          shape: "circle",
+          text: `${order.status} ${order.exitPrice.toFixed(2)}`,
+        });
+      }
     }
-  }
 
-  return out;
-}, [orders]);
-
-   
+    return out;
+  }, [orders]);
 
   const lastCandle = useMemo(() => candles[candles.length - 1], [candles]);
   const openOrder = orders.find((o) => o.status === "OPEN");
   const totalPnL = orders.reduce((sum, o) => sum + (o.pnl || 0), 0);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-7xl p-4 md:p-8 space-y-6">
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                XAU/USD Realtime Bot Simulator
-              </h1>
-              <p className="mt-2 text-slate-300">
-                Realtime moving candle + simulated bot entries and exits on chart.
-              </p>
+    <main className="h-screen overflow-hidden bg-slate-950 text-slate-100">
+      <div className="mx-auto flex h-screen max-w-[1920px] flex-col gap-3 p-3">
+        <Panel
+          title="XAU/USD BOT SIMULATOR DASHBOARD"
+          subtitle="Realtime chart · simulated bot entry/exit · FullHD single-screen layout"
+          className="shrink-0"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5 xl:grid-cols-6">
+              <MiniStat label="SOURCE" value={source} />
+              <MiniStat
+                label="LIVE PRICE"
+                value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"}
+              />
+              <MiniStat label="CANDLES" value={String(candles.length)} />
+              <MiniStat
+                label="LAST QUOTE"
+                value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"}
+              />
+              <MiniStat
+                label="LAST CANDLE"
+                value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"}
+              />
+              <MiniStat label="TOTAL PNL" value={totalPnL.toFixed(2)} />
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -472,7 +505,7 @@ export default function HomePage() {
                   <button
                     key={tf.value}
                     onClick={() => setIntervalValue(tf.value)}
-                    className={`rounded-2xl border px-4 py-2 text-sm font-medium transition ${
+                    className={`rounded-xl border px-3 py-2 text-sm font-medium ${
                       active
                         ? "border-white bg-white text-slate-950"
                         : "border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-500"
@@ -482,173 +515,170 @@ export default function HomePage() {
                   </button>
                 );
               })}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          <div className="xl:col-span-3 rounded-3xl border border-slate-800 bg-slate-900 p-4 md:p-6 shadow-2xl">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold">Candlestick Chart</h2>
-                <p className="text-sm text-slate-400">
-                  Symbol: XAU/USD · Interval: {interval}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-1 text-sm text-slate-300">
-                  Source: {source}
-                </span>
-                <span className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-1 text-sm text-slate-300">
-                  Candles: {candles.length}
-                </span>
-                <button
-                  onClick={() => setBotEnabled((v) => !v)}
-                  className={`rounded-xl border px-3 py-1 text-sm ${
-                    botEnabled
-                      ? "border-emerald-400 bg-emerald-500/10 text-emerald-300"
-                      : "border-slate-700 bg-slate-950 text-slate-300"
-                  }`}
-                >
-                  Bot {botEnabled ? "ON" : "OFF"}
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-950 p-2">
-              {error ? (
-                <div className="flex h-[560px] items-center justify-center text-red-300 px-6 text-center">
-                  {error}
-                </div>
-              ) : loadingCandles && candles.length === 0 ? (
-                <div className="flex h-[560px] items-center justify-center text-slate-400">
-                  Loading candles...
-                </div>
-              ) : candles.length === 0 ? (
-                <div className="flex h-[560px] items-center justify-center text-slate-400">
-                  No candle data available
-                </div>
-              ) : (
-                <XAUChart
-                  candles={candles}
-                  livePrice={livePrice}
-                  markers={chartMarkers}
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-              <h2 className="text-xl font-semibold">Live Price</h2>
-              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950 p-4">
-                <div className="text-sm text-slate-400">XAU/USD</div>
-                <div className="mt-2 text-3xl font-bold">
-                  {typeof livePrice === "number" ? livePrice.toFixed(2) : "--"}
-                </div>
-                <div className="mt-2 text-sm text-slate-400">
-                  {loadingQuote ? "Refreshing..." : `Polling every ${getQuoteRefreshMs(interval) / 1000}s`}
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-              <h2 className="text-xl font-semibold">Bot Status</h2>
-              <div
-                className={`mt-4 rounded-2xl border p-4 ${
-                  openOrder
-                    ? "border-emerald-500/40 bg-emerald-500/10"
-                    : "border-slate-800 bg-slate-950"
+              <button
+                onClick={() => setBotEnabled((v) => !v)}
+                className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                  botEnabled
+                    ? "border-emerald-400 bg-emerald-500/10 text-emerald-300"
+                    : "border-slate-700 bg-slate-950 text-slate-300"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Engine</span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      botEnabled
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "bg-slate-700 text-slate-300"
+                BOT {botEnabled ? "ON" : "OFF"}
+              </button>
+            </div>
+          </div>
+        </Panel>
+
+        <div className="grid min-h-0 flex-1 grid-cols-12 gap-3">
+          <div className="col-span-12 min-h-0 xl:col-span-9">
+            <Panel
+              title="PRICE CHART"
+              subtitle={`Symbol: XAU/USD · Interval: ${interval} · Realtime candle simulation on last bar`}
+              className="flex h-full min-h-0 flex-col"
+            >
+              <div className="min-h-0 flex-1 rounded-xl border border-slate-800 bg-slate-950 p-2">
+                {error ? (
+                  <div className="flex h-full items-center justify-center text-center text-red-300">
+                    {error}
+                  </div>
+                ) : loadingCandles && candles.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    Loading candles...
+                  </div>
+                ) : candles.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    No candle data available
+                  </div>
+                ) : (
+                  <XAUChart candles={candles} livePrice={livePrice} markers={chartMarkers} />
+                )}
+              </div>
+            </Panel>
+          </div>
+
+          <div className="col-span-12 grid min-h-0 grid-rows-3 gap-3 xl:col-span-3">
+            <Panel
+              title="LIVE MARKET STATUS"
+              subtitle="Current market information"
+              className="min-h-0"
+            >
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard label="OPEN" value={lastCandle?.open} />
+                <StatCard label="HIGH" value={lastCandle?.high} />
+                <StatCard label="LOW" value={lastCandle?.low} />
+                <StatCard label="CLOSE" value={lastCandle?.close} />
+              </div>
+              <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950 p-3">
+                <div className="text-xs text-slate-400">QUOTE POLLING</div>
+                <div className="mt-1 text-sm text-slate-200">
+                  {loadingQuote ? "Refreshing..." : `Every ${getQuoteRefreshMs(interval) / 1000} sec`}
+                </div>
+              </div>
+            </Panel>
+
+            <Panel
+              title="BOT STATUS"
+              subtitle="Order engine and active execution status"
+              className="min-h-0"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-sm text-slate-400">ENGINE</span>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    botEnabled
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "bg-slate-700 text-slate-300"
+                  }`}
+                >
+                  {botEnabled ? "RUNNING" : "PAUSED"}
+                </span>
+              </div>
+
+              {openOrder ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400"></span>
+                    </span>
+                    <span className="text-sm font-medium text-emerald-300">
+                      ACTIVE SIMULATED ORDER
+                    </span>
+                  </div>
+
+                  <div
+                    className={`rounded-xl border border-emerald-500/30 bg-slate-950 p-3 ${
+                      statusPulse ? "animate-pulse" : ""
                     }`}
                   >
-                    {botEnabled ? "RUNNING" : "PAUSED"}
-                  </span>
-                </div>
-
-                <div className="mt-4">
-                  {openOrder ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <span className="relative flex h-3 w-3">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400"></span>
-                        </span>
-                        <span className="text-sm font-medium text-emerald-300">
-                          Active simulated order
-                        </span>
-                      </div>
-                      <div className={`${statusPulse ? "animate-pulse" : ""} rounded-2xl border border-emerald-500/30 bg-slate-950 p-3`}>
-                        <div className="text-sm">Side: {openOrder.side}</div>
-                        <div className="text-sm">Entry: {openOrder.entryPrice.toFixed(2)}</div>
-                        <div className="text-sm">TP: {openOrder.tp.toFixed(2)}</div>
-                        <div className="text-sm">SL: {openOrder.sl.toFixed(2)}</div>
-                      </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <InfoLine label="SIDE" value={openOrder.side} />
+                      <InfoLine label="STATUS" value={openOrder.status} />
+                      <InfoLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
+                      <InfoLine label="TP" value={openOrder.tp.toFixed(2)} />
+                      <InfoLine label="SL" value={openOrder.sl.toFixed(2)} />
+                      <InfoLine
+                        label="REASON"
+                        value={openOrder.reason}
+                        full
+                      />
                     </div>
-                  ) : (
-                    <div className="text-sm text-slate-400">
-                      No active simulated order
-                    </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-              <h2 className="text-xl font-semibold">Summary</h2>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <StatCard label="Open" value={lastCandle?.open} />
-                <StatCard label="High" value={lastCandle?.high} />
-                <StatCard label="Low" value={lastCandle?.low} />
-                <StatCard label="Close" value={lastCandle?.close} />
-              </div>
-              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm">
-                <div>Total Orders: {orders.length}</div>
-                <div className={totalPnL >= 0 ? "text-emerald-300" : "text-red-300"}>
-                  Total PnL: {totalPnL.toFixed(2)}
+              ) : (
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-400">
+                  No active simulated order
                 </div>
-                <div>Last candles: {lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"}</div>
-                <div>Last quote: {lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"}</div>
+              )}
+            </Panel>
+
+            <Panel
+              title="SYSTEM SUMMARY"
+              subtitle="Quick overview"
+              className="min-h-0"
+            >
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <SummaryTile label="TOTAL ORDERS" value={String(orders.length)} />
+                <SummaryTile
+                  label="OPEN ORDERS"
+                  value={String(orders.filter((o) => o.status === "OPEN").length)}
+                />
+                <SummaryTile
+                  label="WIN ORDERS"
+                  value={String(orders.filter((o) => o.status === "TP").length)}
+                />
+                <SummaryTile
+                  label="LOSS ORDERS"
+                  value={String(orders.filter((o) => o.status === "SL").length)}
+                />
               </div>
-            </section>
+            </Panel>
           </div>
-        </section>
+        </div>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-xl font-semibold">Bot Activity</h2>
-            <span className="text-sm text-slate-400">
-              Simulated only · no broker connected
-            </span>
-          </div>
-
-          <div className="mt-4 overflow-x-auto">
+        <Panel
+          title="BOT ACTIVITY LOG"
+          subtitle="Simulated orders only · no broker connected"
+          className="min-h-0 shrink-0"
+        >
+          <div className="max-h-[210px] overflow-auto rounded-xl border border-slate-800">
             <table className="min-w-full text-sm">
-              <thead>
+              <thead className="sticky top-0 bg-slate-900">
                 <tr className="border-b border-slate-800 text-slate-400">
-                  <th className="px-3 py-3 text-left">Status</th>
-                  <th className="px-3 py-3 text-left">Side</th>
-                  <th className="px-3 py-3 text-left">Entry</th>
+                  <th className="px-3 py-3 text-left">STATUS</th>
+                  <th className="px-3 py-3 text-left">SIDE</th>
+                  <th className="px-3 py-3 text-left">ENTRY</th>
                   <th className="px-3 py-3 text-left">TP</th>
                   <th className="px-3 py-3 text-left">SL</th>
-                  <th className="px-3 py-3 text-left">Exit</th>
-                  <th className="px-3 py-3 text-left">PnL</th>
-                  <th className="px-3 py-3 text-left">Reason</th>
+                  <th className="px-3 py-3 text-left">EXIT</th>
+                  <th className="px-3 py-3 text-left">PNL</th>
+                  <th className="px-3 py-3 text-left">REASON</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-6 text-center text-slate-400">
+                    <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
                       No simulated orders yet
                     </td>
                   </tr>
@@ -697,9 +727,18 @@ export default function HomePage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </Panel>
       </div>
     </main>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2">
+      <div className="text-[10px] font-medium tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-white">{value}</div>
+    </div>
   );
 }
 
@@ -711,11 +750,37 @@ function StatCard({
   value: number | undefined;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
-      <div className="text-sm text-slate-400">{label}</div>
-      <div className="mt-2 text-lg font-semibold">
+    <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+      <div className="text-[11px] tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-base font-semibold text-white">
         {typeof value === "number" ? value.toFixed(2) : "--"}
       </div>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+      <div className="text-[11px] tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-white">{value}</div>
+    </div>
+  );
+}
+
+function InfoLine({
+  label,
+  value,
+  full = false,
+}: {
+  label: string;
+  value: string;
+  full?: boolean;
+}) {
+  return (
+    <div className={full ? "col-span-2" : ""}>
+      <div className="text-[11px] tracking-wide text-slate-500">{label}</div>
+      <div className="mt-1 text-sm text-white break-words">{value}</div>
     </div>
   );
 }
