@@ -11,7 +11,7 @@
   "dependencies": {
     "lightweight-charts": "^5.0.8",
     "lucide-react": "^0.511.0",
-    "eslint-config-next": "15.5.9",
+    "next": "15.5.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.1"
