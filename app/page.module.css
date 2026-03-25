@@ -18,7 +18,7 @@
 
 .topBar,
 .chartPanelCompact,
-.sideCardCompact,
+.infoStrip,
 .logPanelCompact {
   background: #0f172a;
   border: 1px solid #334155;
@@ -114,13 +114,13 @@
 .mainGridCompact {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 10px;
 }
 
 .chartPanelCompact,
 .logPanelCompact,
-.sideCardCompact {
+.infoStrip {
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -155,14 +155,22 @@
   display: flex;
 }
 
-.sideCompact {
-  min-height: 0;
+.infoStrip {
+  overflow: hidden;
+}
+
+.infoStripBody {
   display: grid;
-  grid-template-rows: auto auto auto;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
+  padding: 10px;
 }
 
 .sideCardCompact {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -348,7 +356,7 @@
   border: 1px solid #334155;
   border-radius: 10px;
   overflow: auto;
-  max-height: 150px;
+  max-height: 120px;
 }
 
 .table {
@@ -425,13 +433,8 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .mainGridCompact {
+  .infoStripBody {
     grid-template-columns: 1fr;
-  }
-
-  .sideCompact {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
   }
 }
 
