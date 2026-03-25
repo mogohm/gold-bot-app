@@ -5,51 +5,51 @@
   overflow: hidden;
 }
 
-.wrapper {
+.wrapperCompact {
   max-width: 1920px;
   height: 100vh;
   margin: 0 auto;
-  padding: 12px;
+  padding: 10px;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
-  gap: 12px;
+  gap: 10px;
   box-sizing: border-box;
 }
 
-.headerCard,
-.chartPanel,
-.sidePanel,
-.logPanel {
+.topBar,
+.chartPanelCompact,
+.sideCardCompact,
+.logPanelCompact {
   background: #0f172a;
   border: 1px solid #334155;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-.headerCard {
-  padding: 14px 16px;
+.topBar {
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .headerTitle {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: #f8fafc;
 }
 
 .headerSub {
-  margin-top: 4px;
-  font-size: 12px;
+  margin-top: 2px;
+  font-size: 11px;
   color: #94a3b8;
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   justify-content: flex-end;
 }
 
@@ -59,10 +59,11 @@
   background: #020617;
   color: #e2e8f0;
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 54px;
 }
 
 .timeBtnActive {
@@ -82,17 +83,18 @@
   color: #cbd5e1;
 }
 
-.topStats {
+.statsCompact {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
-.miniStat {
+.miniStatCompact {
   background: #020617;
   border: 1px solid #334155;
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 8px 10px;
+  min-height: 60px;
 }
 
 .miniLabel {
@@ -102,79 +104,81 @@
 }
 
 .miniValue {
-  margin-top: 6px;
-  font-size: 15px;
+  margin-top: 4px;
+  font-size: 14px;
   font-weight: 700;
   color: #f8fafc;
+  line-height: 1.2;
 }
 
-.contentGrid {
+.mainGridCompact {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(320px, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 10px;
 }
 
-.chartPanel,
-.sidePanel,
-.logPanel {
+.chartPanelCompact,
+.logPanelCompact,
+.sideCardCompact {
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
 }
 
-.panelHeader {
-  padding: 12px 14px;
+.panelHeaderCompact {
+  padding: 10px 12px;
   border-bottom: 1px solid #334155;
 }
 
 .panelTitle {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
   letter-spacing: 0.06em;
   color: #f8fafc;
 }
 
 .panelSub {
-  margin-top: 4px;
-  font-size: 11px;
+  margin-top: 3px;
+  font-size: 10px;
   color: #94a3b8;
 }
 
-.chartBody {
+.chartBodyCompact {
   min-height: 0;
   flex: 1;
-  padding: 10px;
+  margin: 8px;
+  padding: 6px;
+  border-radius: 10px;
   background: #020617;
-  margin: 10px;
-  border-radius: 12px;
   border: 1px solid #1e293b;
   display: flex;
 }
 
-.rightCol {
+.sideCompact {
   min-height: 0;
   display: grid;
-  grid-template-rows: 1fr 1fr 1fr;
-  gap: 12px;
+  grid-template-rows: auto auto auto;
+  gap: 10px;
 }
 
-.sidePanel {
-  padding-bottom: 10px;
+.sideCardCompact {
+  overflow: hidden;
 }
 
-.cardGrid2 {
+.miniGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px;
 }
 
-.statCard {
+.statCardCompact {
   background: #020617;
   border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-height: 52px;
 }
 
 .smallLabel {
@@ -183,48 +187,39 @@
   color: #64748b;
 }
 
-.statValue {
-  margin-top: 6px;
-  font-size: 16px;
+.statValueCompact {
+  margin-top: 4px;
+  font-size: 14px;
   font-weight: 700;
   color: #f8fafc;
 }
 
-.summaryValue {
-  margin-top: 6px;
-  font-size: 20px;
+.summaryValueCompact {
+  margin-top: 4px;
+  font-size: 18px;
   font-weight: 700;
   color: #f8fafc;
 }
 
-.infoBox,
-.emptyBox,
-.activeOrderBox {
-  margin: 0 12px;
+.inlineInfo {
+  margin: 0 10px 10px;
   background: #020617;
   border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #cbd5e1;
 }
 
-.emptyBox {
-  color: #94a3b8;
-  font-size: 13px;
-}
-
-.activeOrderBox {
-  border-color: rgba(52, 211, 153, 0.4);
-}
-
-.statusRow {
-  margin: 12px;
+.statusCompact {
+  margin: 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.muted {
-  font-size: 12px;
+.badgeLabel {
+  font-size: 11px;
   color: #94a3b8;
 }
 
@@ -233,9 +228,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 700;
+  padding: 5px 9px;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .badgeGreen {
@@ -258,22 +253,41 @@
   color: #fcd34d;
 }
 
-.activeRow {
+.activeCompact,
+.emptyCompact {
+  margin: 0 10px 10px;
+  background: #020617;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.activeCompact {
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.emptyCompact {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.activeHeaderCompact {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .activeText {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
   color: #86efac;
 }
 
 .pingDotWrap {
   position: relative;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   display: inline-flex;
 }
 
@@ -288,51 +302,59 @@
 
 .pingDotCore {
   position: relative;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
   background: #34d399;
 }
 
-.infoGrid {
+.compactInfoList {
+  display: grid;
+  gap: 6px;
+}
+
+.compactLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.compactLabel {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.compactValue {
+  color: #f8fafc;
+  font-weight: 600;
+  text-align: right;
+}
+
+.summaryCompactGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 8px;
+  padding: 10px;
 }
 
-.infoLineFull {
-  grid-column: span 2;
+.logPanelCompact {
+  overflow: hidden;
 }
 
-.infoLine,
-.infoLineFull {
-  min-width: 0;
-}
-
-.infoValue {
-  margin-top: 6px;
-  font-size: 13px;
-  color: #f8fafc;
-  word-break: break-word;
-}
-
-.logPanel {
-  min-height: 0;
-}
-
-.logTableWrap {
-  margin: 10px;
+.logTableWrapCompact {
+  margin: 8px;
   border: 1px solid #334155;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: auto;
-  max-height: 210px;
+  max-height: 150px;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .table thead th {
@@ -341,12 +363,12 @@
   background: #0f172a;
   color: #94a3b8;
   text-align: left;
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid #334155;
 }
 
 .table tbody td {
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid #1e293b;
   color: #e2e8f0;
   vertical-align: top;
@@ -355,7 +377,7 @@
 .noData {
   text-align: center;
   color: #94a3b8 !important;
-  padding: 24px !important;
+  padding: 20px !important;
 }
 
 .buyText {
@@ -393,28 +415,28 @@
 }
 
 @media (max-width: 1400px) {
-  .wrapper {
+  .wrapperCompact {
     height: auto;
     min-height: 100vh;
     overflow: auto;
-    grid-template-rows: auto auto auto auto;
   }
 
-  .topStats {
+  .statsCompact {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .contentGrid {
+  .mainGridCompact {
     grid-template-columns: 1fr;
   }
 
-  .rightCol {
+  .sideCompact {
+    grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
   }
 }
 
 @media (max-width: 900px) {
-  .headerCard {
+  .topBar {
     flex-direction: column;
     align-items: stretch;
   }
@@ -423,16 +445,12 @@
     justify-content: flex-start;
   }
 
-  .topStats {
+  .statsCompact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .cardGrid2,
-  .infoGrid {
+  .miniGrid,
+  .summaryCompactGrid {
     grid-template-columns: 1fr;
-  }
-
-  .infoLineFull {
-    grid-column: span 1;
   }
 }
