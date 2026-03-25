@@ -77,6 +77,7 @@ export default function HomePage() {
 
   const loadingCandlesRef = useRef(false);
   const loadingQuoteRef = useRef(false);
+  console.log("CANDLES:", candles);
 
   async function loadCandles(selectedInterval: TimeframeValue) {
     if (loadingCandlesRef.current) return;
@@ -285,4 +286,4 @@ function StatCard({
     </div>
   );
 }
-console.log("CANDLES:", candles);
+
