@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CandlestickData, Time } from "lightweight-charts";
 import XAUChart from "@/components/XAUChart";
 import { TIMEFRAME_OPTIONS, type TimeframeValue } from "@/lib/timeframes";
@@ -22,6 +22,48 @@ type QuoteResponse = {
   error?: string;
 };
 
+function getCandleRefreshMs(interval: TimeframeValue) {
+  switch (interval) {
+    case "1min":
+      return 60_000;
+    case "5min":
+      return 120_000;
+    case "15min":
+      return 300_000;
+    case "30min":
+      return 600_000;
+    case "1h":
+      return 900_000;
+    case "1day":
+      return 3_600_000;
+    case "1month":
+      return 21_600_000;
+    default:
+      return 60_000;
+  }
+}
+
+function getQuoteRefreshMs(interval: TimeframeValue) {
+  switch (interval) {
+    case "1min":
+      return 15_000;
+    case "5min":
+      return 20_000;
+    case "15min":
+      return 30_000;
+    case "30min":
+      return 45_000;
+    case "1h":
+      return 60_000;
+    case "1day":
+      return 120_000;
+    case "1month":
+      return 300_000;
+    default:
+      return 15_000;
+  }
+}
+
 export default function HomePage() {
   const [interval, setIntervalValue] = useState<TimeframeValue>("1min");
   const [candles, setCandles] = useState<CandlestickData<Time>[]>([]);
@@ -30,14 +72,22 @@ export default function HomePage() {
   const [loadingQuote, setLoadingQuote] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<string>("unknown");
+  const [lastQuoteAt, setLastQuoteAt] = useState<number | null>(null);
+  const [lastCandlesAt, setLastCandlesAt] = useState<number | null>(null);
+
+  const loadingCandlesRef = useRef(false);
+  const loadingQuoteRef = useRef(false);
 
   async function loadCandles(selectedInterval: TimeframeValue) {
+    if (loadingCandlesRef.current) return;
+
+    loadingCandlesRef.current = true;
     setLoadingCandles(true);
     setError(null);
 
     try {
       const res = await fetch(
-        `/api/market/candles?interval=${selectedInterval}&outputsize=300`,
+        `/api/market/candles?interval=${selectedInterval}&outputsize=200`,
         { cache: "no-store" }
       );
       const data: CandleResponse = await res.json();
@@ -49,14 +99,19 @@ export default function HomePage() {
 
       setCandles(data.candles);
       setSource(data.source || "unknown");
+      setLastCandlesAt(Date.now());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load candles");
     } finally {
       setLoadingCandles(false);
+      loadingCandlesRef.current = false;
     }
   }
 
   async function loadQuote() {
+    if (loadingQuoteRef.current) return;
+
+    loadingQuoteRef.current = true;
     setLoadingQuote(true);
 
     try {
@@ -65,44 +120,33 @@ export default function HomePage() {
 
       if (data.ok && typeof data.price === "number") {
         setLivePrice(data.price);
+        setLastQuoteAt(Date.now());
       }
     } finally {
       setLoadingQuote(false);
+      loadingQuoteRef.current = false;
     }
   }
 
   useEffect(() => {
     loadCandles(interval);
+    loadQuote();
   }, [interval]);
 
   useEffect(() => {
-    loadQuote();
-    const quoteTimer = setInterval(loadQuote, 3000);
-
-    return () => clearInterval(quoteTimer);
-  }, []);
-
-  useEffect(() => {
-    const refreshMs =
-      interval === "1min"
-        ? 15000
-        : interval === "5min"
-        ? 30000
-        : interval === "15min"
-        ? 60000
-        : interval === "30min"
-        ? 120000
-        : interval === "1h"
-        ? 180000
-        : interval === "1day"
-        ? 600000
-        : 900000;
-
     const candleTimer = setInterval(() => {
       loadCandles(interval);
-    }, refreshMs);
+    }, getCandleRefreshMs(interval));
 
     return () => clearInterval(candleTimer);
+  }, [interval]);
+
+  useEffect(() => {
+    const quoteTimer = setInterval(() => {
+      loadQuote();
+    }, getQuoteRefreshMs(interval));
+
+    return () => clearInterval(quoteTimer);
   }, [interval]);
 
   const lastCandle = useMemo(() => candles[candles.length - 1], [candles]);
@@ -117,7 +161,7 @@ export default function HomePage() {
                 XAU/USD Real-Time Dashboard
               </h1>
               <p className="mt-2 text-slate-300">
-                Candlestick chart with real market data, live price polling, and timeframe switching.
+                Real market candles with safer API usage for low-credit plans.
               </p>
             </div>
 
@@ -168,7 +212,7 @@ export default function HomePage() {
                   Loading candles...
                 </div>
               ) : error ? (
-                <div className="flex h-[560px] items-center justify-center text-red-300">
+                <div className="flex h-[560px] items-center justify-center text-red-300 px-6 text-center">
                   {error}
                 </div>
               ) : (
@@ -186,7 +230,7 @@ export default function HomePage() {
                   {typeof livePrice === "number" ? livePrice.toFixed(2) : "--"}
                 </div>
                 <div className="mt-2 text-sm text-slate-400">
-                  {loadingQuote ? "Refreshing..." : "Live polling every 3s"}
+                  {loadingQuote ? "Refreshing..." : `Polling every ${getQuoteRefreshMs(interval) / 1000}s`}
                 </div>
               </div>
             </section>
@@ -202,11 +246,12 @@ export default function HomePage() {
             </section>
 
             <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-              <h2 className="text-xl font-semibold">Notes</h2>
+              <h2 className="text-xl font-semibold">Request Status</h2>
               <div className="mt-4 space-y-2 text-sm text-slate-300">
-                <p>• ถ้าไม่มี API key ระบบจะ fallback เป็น mock data</p>
-                <p>• 1m จะรีเฟรช candle ถี่ที่สุด</p>
-                <p>• ราคา live ใช้ polling ทุก 3 วินาที</p>
+                <p>Source: {source}</p>
+                <p>Last candles: {lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"}</p>
+                <p>Last quote: {lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"}</p>
+                <p>Low-credit safe mode is enabled.</p>
               </div>
             </section>
           </div>
