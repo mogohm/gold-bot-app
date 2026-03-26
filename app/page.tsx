@@ -445,12 +445,12 @@ export default function HomePage() {
 
   return (
     <main className={styles.screen}>
-      <div className={styles.wrapperCompact}>
+      <div className={styles.wrapperL}>
         <div className={styles.topBar}>
           <div>
             <div className={styles.headerTitle}>XAU/USD BOT SIMULATOR DASHBOARD</div>
             <div className={styles.headerSub}>
-              Realtime chart · simulated orders · compact FullHD layout
+              Realtime chart · simulated orders · L-shape layout
             </div>
           </div>
 
@@ -482,8 +482,8 @@ export default function HomePage() {
           <MiniStat label="PNL" value={totalPnL.toFixed(2)} />
         </div>
 
-        <div className={styles.mainGridCompact}>
-          <section className={styles.chartPanelCompact}>
+        <div className={styles.lShapeGrid}>
+          <section className={styles.chartPanelL}>
             <div className={styles.panelHeaderCompact}>
               <div>
                 <div className={styles.panelTitle}>PRICE CHART</div>
@@ -491,7 +491,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className={styles.chartBodyCompact}>
+            <div className={styles.chartBodyL}>
               {error ? (
                 <div className={styles.centerMessageError}>{error}</div>
               ) : loadingCandles && candles.length === 0 ? (
@@ -504,79 +504,66 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section className={styles.infoStrip}>
-            <div className={styles.infoStripBody}>
-              <section className={styles.sideCardCompact}>
-                <div className={styles.panelHeaderCompact}>
-                  <div className={styles.panelTitle}>MARKET</div>
-                  <div className={styles.panelSub}>Current values</div>
-                </div>
-                <div className={styles.miniGrid}>
-                  <StatCard label="OPEN" value={lastCandle?.open} />
-                  <StatCard label="HIGH" value={lastCandle?.high} />
-                  <StatCard label="LOW" value={lastCandle?.low} />
-                  <StatCard label="CLOSE" value={lastCandle?.close} />
-                </div>
-                <div className={styles.inlineInfo}>
-                  Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
-                </div>
-              </section>
+          <section className={styles.marketPanel}>
+            <div className={styles.panelHeaderCompact}>
+              <div className={styles.panelTitle}>MARKET</div>
+              <div className={styles.panelSub}>Current values</div>
+            </div>
+            <div className={styles.miniGrid}>
+              <StatCard label="OPEN" value={lastCandle?.open} />
+              <StatCard label="HIGH" value={lastCandle?.high} />
+              <StatCard label="LOW" value={lastCandle?.low} />
+              <StatCard label="CLOSE" value={lastCandle?.close} />
+            </div>
+            <div className={styles.inlineInfo}>
+              Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
+            </div>
+          </section>
 
-              <section className={styles.sideCardCompact}>
-                <div className={styles.panelHeaderCompact}>
-                  <div className={styles.panelTitle}>BOT STATUS</div>
-                  <div className={styles.panelSub}>Execution</div>
-                </div>
+          <section className={styles.botPanel}>
+            <div className={styles.panelHeaderCompact}>
+              <div className={styles.panelTitle}>BOT STATUS</div>
+              <div className={styles.panelSub}>Execution</div>
+            </div>
 
-                <div className={styles.statusCompact}>
-                  <span className={styles.badgeLabel}>ENGINE</span>
-                  <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
-                    {botEnabled ? "RUNNING" : "PAUSED"}
+            <div className={styles.statusCompact}>
+              <span className={styles.badgeLabel}>ENGINE</span>
+              <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
+                {botEnabled ? "RUNNING" : "PAUSED"}
+              </span>
+            </div>
+
+            {openOrder ? (
+              <div className={styles.activeCompact}>
+                <div className={styles.activeHeaderCompact}>
+                  <span className={styles.pingDotWrap}>
+                    <span className={styles.pingDot}></span>
+                    <span className={styles.pingDotCore}></span>
                   </span>
+                  <span className={styles.activeText}>ACTIVE ORDER</span>
                 </div>
+                <div className={styles.compactInfoList}>
+                  <CompactLine label="SIDE" value={openOrder.side} />
+                  <CompactLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
+                  <CompactLine label="TP" value={openOrder.tp.toFixed(2)} />
+                  <CompactLine label="SL" value={openOrder.sl.toFixed(2)} />
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyCompact}>No active simulated order</div>
+            )}
+          </section>
 
-                {openOrder ? (
-                  <div className={styles.activeCompact}>
-                    <div className={styles.activeHeaderCompact}>
-                      <span className={styles.pingDotWrap}>
-                        <span className={styles.pingDot}></span>
-                        <span className={styles.pingDotCore}></span>
-                      </span>
-                      <span className={styles.activeText}>ACTIVE ORDER</span>
-                    </div>
-                    <div className={styles.compactInfoList}>
-                      <CompactLine label="SIDE" value={openOrder.side} />
-                      <CompactLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
-                      <CompactLine label="TP" value={openOrder.tp.toFixed(2)} />
-                      <CompactLine label="SL" value={openOrder.sl.toFixed(2)} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.emptyCompact}>No active simulated order</div>
-                )}
-              </section>
-
-              <section className={styles.sideCardCompact}>
-                <div className={styles.panelHeaderCompact}>
-                  <div className={styles.panelTitle}>SUMMARY</div>
-                  <div className={styles.panelSub}>Overview</div>
-                </div>
-                <div className={styles.summaryCompactGrid}>
-                  <SummaryTile label="ORDERS" value={String(orders.length)} />
-                  <SummaryTile
-                    label="OPEN"
-                    value={String(orders.filter((o) => o.status === "OPEN").length)}
-                  />
-                  <SummaryTile
-                    label="WIN"
-                    value={String(orders.filter((o) => o.status === "TP").length)}
-                  />
-                  <SummaryTile
-                    label="LOSS"
-                    value={String(orders.filter((o) => o.status === "SL").length)}
-                  />
-                </div>
-              </section>
+          <section className={styles.summaryPanel}>
+            <div className={styles.panelHeaderCompact}>
+              <div className={styles.panelTitle}>SUMMARY</div>
+              <div className={styles.panelSub}>Overview</div>
+            </div>
+            <div className={styles.summaryCompactGrid}>
+              <SummaryTile label="ORDERS" value={String(orders.length)} />
+              <SummaryTile label="OPEN" value={String(orders.filter((o) => o.status === "OPEN").length)} />
+              <SummaryTile label="WIN" value={String(orders.filter((o) => o.status === "TP").length)} />
+              <SummaryTile label="LOSS" value={String(orders.filter((o) => o.status === "SL").length)} />
             </div>
           </section>
         </div>
