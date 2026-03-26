@@ -445,197 +445,199 @@ export default function HomePage() {
 
   return (
     <main className={styles.screen}>
-      <div className={styles.wrapperRow}>
-        <div className={styles.headerCard}>
-          <div>
-            <div className={styles.headerTitle}>XAU/USD BOT SIMULATOR DASHBOARD</div>
-            <div className={styles.headerSub}>
-              Realtime chart · simulated orders · row layout
-            </div>
-          </div>
-
-          <button
-            onClick={() => setBotEnabled((v) => !v)}
-            className={`${styles.botBtn} ${botEnabled ? styles.botOn : styles.botOff}`}
-          >
-            BOT {botEnabled ? "ON" : "OFF"}
-          </button>
-        </div>
-
-        <div className={styles.mainRowCard}>
-          <div className={styles.chartZone}>
-            <div className={styles.chartTopBar}>
-              <div>
-                <div className={styles.panelTitle}>PRICE CHART</div>
-                <div className={styles.panelSub}>XAU/USD · {interval}</div>
-              </div>
-
-              <div className={styles.chartToolbar}>
-                {TIMEFRAME_OPTIONS.map((tf) => (
-                  <button
-                    key={tf.value}
-                    onClick={() => setIntervalValue(tf.value)}
-                    className={`${styles.timeBtn} ${interval === tf.value ? styles.timeBtnActive : ""}`}
-                  >
-                    {tf.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.chartCanvasWrap}>
-              {error ? (
-                <div className={styles.centerMessageError}>{error}</div>
-              ) : loadingCandles && candles.length === 0 ? (
-                <div className={styles.centerMessage}>Loading candles...</div>
-              ) : candles.length === 0 ? (
-                <div className={styles.centerMessage}>No candle data available</div>
-              ) : (
-                <XAUChart candles={candles} livePrice={livePrice} markers={chartMarkers} />
-              )}
-            </div>
-          </div>
-
-          <aside className={styles.infoRail}>
-            <TopInfo label="SOURCE" value={source} />
-            <TopInfo label="LIVE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
-            <TopInfo label="CANDLES" value={String(candles.length)} />
-            <TopInfo label="QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
-            <TopInfo label="CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
-            <TopInfo label="PNL" value={totalPnL.toFixed(2)} />
-          </aside>
-        </div>
-
-        <div className={styles.lowerPanels}>
-          <section className={styles.sidePanel}>
-            <div className={styles.panelHeaderCompact}>
-              <div className={styles.panelTitle}>MARKET</div>
-              <div className={styles.panelSub}>Current values</div>
-            </div>
-            <div className={styles.sideGrid}>
-              <StatCard label="OPEN" value={lastCandle?.open} />
-              <StatCard label="HIGH" value={lastCandle?.high} />
-              <StatCard label="LOW" value={lastCandle?.low} />
-              <StatCard label="CLOSE" value={lastCandle?.close} />
-            </div>
-            <div className={styles.inlineInfo}>
-              Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
-            </div>
-          </section>
-
-          <section className={styles.sidePanel}>
-            <div className={styles.panelHeaderCompact}>
-              <div className={styles.panelTitle}>BOT STATUS</div>
-              <div className={styles.panelSub}>Execution</div>
-            </div>
-
-            <div className={styles.statusCompact}>
-              <span className={styles.badgeLabel}>ENGINE</span>
-              <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
-                {botEnabled ? "RUNNING" : "PAUSED"}
-              </span>
-            </div>
-
-            {openOrder ? (
-              <div className={styles.activeCompact}>
-                <div className={styles.activeHeaderCompact}>
-                  <span className={styles.pingDotWrap}>
-                    <span className={styles.pingDot}></span>
-                    <span className={styles.pingDotCore}></span>
-                  </span>
-                  <span className={styles.activeText}>ACTIVE ORDER</span>
-                </div>
-                <div className={styles.compactInfoList}>
-                  <CompactLine label="SIDE" value={openOrder.side} />
-                  <CompactLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
-                  <CompactLine label="TP" value={openOrder.tp.toFixed(2)} />
-                  <CompactLine label="SL" value={openOrder.sl.toFixed(2)} />
-                </div>
-              </div>
-            ) : (
-              <div className={styles.emptyCompact}>No active simulated order</div>
-            )}
-          </section>
-
-          <section className={styles.sidePanel}>
-            <div className={styles.panelHeaderCompact}>
-              <div className={styles.panelTitle}>SUMMARY</div>
-              <div className={styles.panelSub}>Overview</div>
-            </div>
-            <div className={styles.sideGrid}>
-              <SummaryTile label="ORDERS" value={String(orders.length)} />
-              <SummaryTile label="OPEN" value={String(orders.filter((o) => o.status === "OPEN").length)} />
-              <SummaryTile label="WIN" value={String(orders.filter((o) => o.status === "TP").length)} />
-              <SummaryTile label="LOSS" value={String(orders.filter((o) => o.status === "SL").length)} />
-            </div>
-          </section>
-        </div>
-
-        <section className={styles.logPanelCompact}>
-          <div className={styles.panelHeaderCompact}>
+      <div className={styles.viewport}>
+        <div className={styles.wrapperFixed}>
+          <div className={styles.headerCard}>
             <div>
-              <div className={styles.panelTitle}>BOT ACTIVITY LOG</div>
-              <div className={styles.panelSub}>Simulated only · no broker connected</div>
+              <div className={styles.headerTitle}>XAU/USD BOT SIMULATOR DASHBOARD</div>
+              <div className={styles.headerSub}>
+                Realtime chart · simulated orders · fixed layout
+              </div>
             </div>
+
+            <button
+              onClick={() => setBotEnabled((v) => !v)}
+              className={`${styles.botBtn} ${botEnabled ? styles.botOn : styles.botOff}`}
+            >
+              BOT {botEnabled ? "ON" : "OFF"}
+            </button>
           </div>
 
-          <div className={styles.logTableWrapCompact}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>STATUS</th>
-                  <th>SIDE</th>
-                  <th>ENTRY</th>
-                  <th>TP</th>
-                  <th>SL</th>
-                  <th>EXIT</th>
-                  <th>PNL</th>
-                  <th>REASON</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className={styles.noData}>
-                      No simulated orders yet
-                    </td>
-                  </tr>
+          <div className={styles.mainRowCard}>
+            <div className={styles.chartZone}>
+              <div className={styles.chartTopBar}>
+                <div>
+                  <div className={styles.panelTitle}>PRICE CHART</div>
+                  <div className={styles.panelSub}>XAU/USD · {interval}</div>
+                </div>
+
+                <div className={styles.chartToolbar}>
+                  {TIMEFRAME_OPTIONS.map((tf) => (
+                    <button
+                      key={tf.value}
+                      onClick={() => setIntervalValue(tf.value)}
+                      className={`${styles.timeBtn} ${interval === tf.value ? styles.timeBtnActive : ""}`}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.chartCanvasWrap}>
+                {error ? (
+                  <div className={styles.centerMessageError}>{error}</div>
+                ) : loadingCandles && candles.length === 0 ? (
+                  <div className={styles.centerMessage}>Loading candles...</div>
+                ) : candles.length === 0 ? (
+                  <div className={styles.centerMessage}>No candle data available</div>
                 ) : (
-                  orders.map((order) => (
-                    <tr key={order.id}>
-                      <td>
-                        {order.status === "OPEN" ? (
-                          <span className={`${styles.badge} ${styles.badgeGreen}`}>OPEN</span>
-                        ) : order.status === "TP" ? (
-                          <span className={`${styles.badge} ${styles.badgeBlue}`}>TP HIT</span>
-                        ) : (
-                          <span className={`${styles.badge} ${styles.badgeAmber}`}>SL HIT</span>
-                        )}
-                      </td>
-                      <td className={order.side === "BUY" ? styles.buyText : styles.sellText}>
-                        {order.side}
-                      </td>
-                      <td>{order.entryPrice.toFixed(2)}</td>
-                      <td>{order.tp.toFixed(2)}</td>
-                      <td>{order.sl.toFixed(2)}</td>
-                      <td>{typeof order.exitPrice === "number" ? order.exitPrice.toFixed(2) : "--"}</td>
-                      <td
-                        className={
-                          typeof order.pnl === "number" && order.pnl >= 0
-                            ? styles.buyText
-                            : styles.sellText
-                        }
-                      >
-                        {typeof order.pnl === "number" ? order.pnl.toFixed(2) : "--"}
-                      </td>
-                      <td>{order.reason}</td>
-                    </tr>
-                  ))
+                  <XAUChart candles={candles} livePrice={livePrice} markers={chartMarkers} />
                 )}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            <aside className={styles.infoRail}>
+              <TopInfo label="SOURCE" value={source} />
+              <TopInfo label="LIVE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
+              <TopInfo label="CANDLES" value={String(candles.length)} />
+              <TopInfo label="QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
+              <TopInfo label="CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
+              <TopInfo label="PNL" value={totalPnL.toFixed(2)} />
+            </aside>
           </div>
-        </section>
+
+          <div className={styles.lowerPanels}>
+            <section className={styles.sidePanel}>
+              <div className={styles.panelHeaderCompact}>
+                <div className={styles.panelTitle}>MARKET</div>
+                <div className={styles.panelSub}>Current values</div>
+              </div>
+              <div className={styles.sideGrid}>
+                <StatCard label="OPEN" value={lastCandle?.open} />
+                <StatCard label="HIGH" value={lastCandle?.high} />
+                <StatCard label="LOW" value={lastCandle?.low} />
+                <StatCard label="CLOSE" value={lastCandle?.close} />
+              </div>
+              <div className={styles.inlineInfo}>
+                Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
+              </div>
+            </section>
+
+            <section className={styles.sidePanel}>
+              <div className={styles.panelHeaderCompact}>
+                <div className={styles.panelTitle}>BOT STATUS</div>
+                <div className={styles.panelSub}>Execution</div>
+              </div>
+
+              <div className={styles.statusCompact}>
+                <span className={styles.badgeLabel}>ENGINE</span>
+                <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
+                  {botEnabled ? "RUNNING" : "PAUSED"}
+                </span>
+              </div>
+
+              {openOrder ? (
+                <div className={styles.activeCompact}>
+                  <div className={styles.activeHeaderCompact}>
+                    <span className={styles.pingDotWrap}>
+                      <span className={styles.pingDot}></span>
+                      <span className={styles.pingDotCore}></span>
+                    </span>
+                    <span className={styles.activeText}>ACTIVE ORDER</span>
+                  </div>
+                  <div className={styles.compactInfoList}>
+                    <CompactLine label="SIDE" value={openOrder.side} />
+                    <CompactLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
+                    <CompactLine label="TP" value={openOrder.tp.toFixed(2)} />
+                    <CompactLine label="SL" value={openOrder.sl.toFixed(2)} />
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.emptyCompact}>No active simulated order</div>
+              )}
+            </section>
+
+            <section className={styles.sidePanel}>
+              <div className={styles.panelHeaderCompact}>
+                <div className={styles.panelTitle}>SUMMARY</div>
+                <div className={styles.panelSub}>Overview</div>
+              </div>
+              <div className={styles.sideGrid}>
+                <SummaryTile label="ORDERS" value={String(orders.length)} />
+                <SummaryTile label="OPEN" value={String(orders.filter((o) => o.status === "OPEN").length)} />
+                <SummaryTile label="WIN" value={String(orders.filter((o) => o.status === "TP").length)} />
+                <SummaryTile label="LOSS" value={String(orders.filter((o) => o.status === "SL").length)} />
+              </div>
+            </section>
+          </div>
+
+          <section className={styles.logPanelCompact}>
+            <div className={styles.panelHeaderCompact}>
+              <div>
+                <div className={styles.panelTitle}>BOT ACTIVITY LOG</div>
+                <div className={styles.panelSub}>Simulated only · no broker connected</div>
+              </div>
+            </div>
+
+            <div className={styles.logTableWrapCompact}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>STATUS</th>
+                    <th>SIDE</th>
+                    <th>ENTRY</th>
+                    <th>TP</th>
+                    <th>SL</th>
+                    <th>EXIT</th>
+                    <th>PNL</th>
+                    <th>REASON</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className={styles.noData}>
+                        No simulated orders yet
+                      </td>
+                    </tr>
+                  ) : (
+                    orders.map((order) => (
+                      <tr key={order.id}>
+                        <td>
+                          {order.status === "OPEN" ? (
+                            <span className={`${styles.badge} ${styles.badgeGreen}`}>OPEN</span>
+                          ) : order.status === "TP" ? (
+                            <span className={`${styles.badge} ${styles.badgeBlue}`}>TP HIT</span>
+                          ) : (
+                            <span className={`${styles.badge} ${styles.badgeAmber}`}>SL HIT</span>
+                          )}
+                        </td>
+                        <td className={order.side === "BUY" ? styles.buyText : styles.sellText}>
+                          {order.side}
+                        </td>
+                        <td>{order.entryPrice.toFixed(2)}</td>
+                        <td>{order.tp.toFixed(2)}</td>
+                        <td>{order.sl.toFixed(2)}</td>
+                        <td>{typeof order.exitPrice === "number" ? order.exitPrice.toFixed(2) : "--"}</td>
+                        <td
+                          className={
+                            typeof order.pnl === "number" && order.pnl >= 0
+                              ? styles.buyText
+                              : styles.sellText
+                          }
+                        >
+                          {typeof order.pnl === "number" ? order.pnl.toFixed(2) : "--"}
+                        </td>
+                        <td>{order.reason}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       </div>
     </main>
   );
