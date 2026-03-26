@@ -5,7 +5,7 @@
   overflow: hidden;
 }
 
-.wrapperCompact {
+.wrapperL {
   max-width: 1920px;
   height: 100vh;
   margin: 0 auto;
@@ -17,13 +17,16 @@
 }
 
 .topBar,
-.chartPanelCompact,
-.infoStrip,
+.chartPanelL,
+.marketPanel,
+.botPanel,
+.summaryPanel,
 .logPanelCompact {
   background: #0f172a;
   border: 1px solid #334155;
   border-radius: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
 }
 
 .topBar {
@@ -119,17 +122,40 @@
   word-break: break-word;
 }
 
-.mainGridCompact {
+.lShapeGrid {
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-rows: 1fr 1fr 1fr;
   gap: 10px;
 }
 
-.chartPanelCompact,
-.infoStrip,
-.logPanelCompact {
+.chartPanelL {
+  min-width: 0;
   min-height: 0;
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  display: flex;
+  flex-direction: column;
+}
+
+.marketPanel {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.botPanel {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.summaryPanel {
+  grid-column: 2;
+  grid-row: 3;
   display: flex;
   flex-direction: column;
 }
@@ -153,7 +179,8 @@
   color: #94a3b8;
 }
 
-.chartBodyCompact {
+.chartBodyL {
+  min-width: 0;
   min-height: 0;
   flex: 1;
   margin: 8px;
@@ -162,27 +189,7 @@
   background: #020617;
   border: 1px solid #1e293b;
   display: flex;
-}
-
-.infoStrip {
   overflow: hidden;
-}
-
-.infoStripBody {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  padding: 10px;
-}
-
-.sideCardCompact {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .miniGrid {
@@ -373,7 +380,7 @@
   border: 1px solid #334155;
   border-radius: 10px;
   overflow: auto;
-  max-height: 120px;
+  max-height: 130px;
 }
 
 .table {
@@ -440,9 +447,8 @@
   }
 }
 
-/* Desktop ทั่วไป ยังบังคับ 3 กล่องแถวเดียว */
-@media (max-width: 1100px) {
-  .wrapperCompact {
+@media (max-width: 1200px) {
+  .wrapperL {
     height: auto;
     min-height: 100vh;
     overflow: auto;
@@ -452,12 +458,20 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .infoStripBody {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .lShapeGrid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .chartPanelL,
+  .marketPanel,
+  .botPanel,
+  .summaryPanel {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 
-/* ค่อยยุบเมื่อจอเล็กจริง */
 @media (max-width: 900px) {
   .topBar {
     flex-direction: column;
@@ -470,10 +484,6 @@
 
   .statsCompact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .infoStripBody {
-    grid-template-columns: 1fr;
   }
 
   .miniGrid,
