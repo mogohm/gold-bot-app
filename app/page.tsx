@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CandlestickData, Time } from "lightweight-charts";
 import XAUChart, { type BotMarker } from "@/components/XAUChart";
+import { useTwelveDataWS } from "@/lib/useTwelveDataWS";
 import { TIMEFRAME_OPTIONS, type TimeframeValue } from "@/lib/timeframes";
 import styles from "./page.module.css";
 
@@ -66,25 +67,8 @@ function getCandleRefreshMs(interval: TimeframeValue) {
   }
 }
 
-function getQuoteRefreshMs(interval: TimeframeValue) {
-  switch (interval) {
-    case "1min":
-      return 5000;
-    case "5min":
-      return 8000;
-    case "15min":
-      return 12000;
-    case "30min":
-      return 15000;
-    case "1h":
-      return 20000;
-    case "1day":
-      return 30000;
-    case "1month":
-      return 60000;
-    default:
-      return 5000;
-  }
+function getQuoteRefreshMs() {
+  return 30000;
 }
 
 function normalizeCandles(rows: RawCandle[] = []): CandlestickData<Time>[] {
@@ -234,6 +218,11 @@ export default function HomePage() {
   const loadingQuoteRef = useRef(false);
   const lastSignalBucketRef = useRef<string>("");
 
+  const ws = useTwelveDataWS({
+    symbol: "XAU/USD",
+    enabled: true,
+  });
+
   async function loadCandles(selectedInterval: TimeframeValue) {
     if (loadingCandlesRef.current) return;
 
@@ -279,6 +268,13 @@ export default function HomePage() {
   }
 
   async function loadQuote() {
+    if (ws.price !== null) {
+      setLivePrice(ws.price);
+      setLastQuoteAt(ws.lastMessageAt || Date.now());
+      setLoadingQuote(false);
+      return;
+    }
+
     if (loadingQuoteRef.current) return;
 
     loadingQuoteRef.current = true;
@@ -288,7 +284,9 @@ export default function HomePage() {
       const res = await fetch(`/api/market/quote`, { cache: "no-store" });
       const data: QuoteResponse = await res.json();
 
-      if (!res.ok || !data.ok || typeof data.price !== "number") return;
+      if (!res.ok || !data.ok || typeof data.price !== "number") {
+        return;
+      }
 
       setLivePrice(Number(data.price));
       setLastQuoteAt(Date.now());
@@ -301,10 +299,19 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    if (ws.price !== null) {
+      setLivePrice(ws.price);
+      setLastQuoteAt(ws.lastMessageAt || Date.now());
+      setLoadingQuote(false);
+    }
+  }, [ws.price, ws.lastMessageAt]);
+
+  useEffect(() => {
     setOrders([]);
     lastSignalBucketRef.current = "";
     loadCandles(interval);
     loadQuote();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interval]);
 
   useEffect(() => {
@@ -318,10 +325,11 @@ export default function HomePage() {
   useEffect(() => {
     const quoteTimer = setInterval(() => {
       loadQuote();
-    }, getQuoteRefreshMs(interval));
+    }, getQuoteRefreshMs());
 
     return () => clearInterval(quoteTimer);
-  }, [interval]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ws.price]);
 
   const candles = useMemo(
     () => createRealtimeCandles(baseCandles, livePrice, interval),
@@ -448,7 +456,7 @@ export default function HomePage() {
           <div>
             <div className={styles.headerTitle}>XAU/USD BOT SIMULATOR DASHBOARD</div>
             <div className={styles.headerSub}>
-              Realtime chart · simulated orders · stable layout
+              Realtime chart · simulated orders · websocket feed
             </div>
           </div>
 
@@ -495,12 +503,12 @@ export default function HomePage() {
           </section>
 
           <aside className={styles.infoRail}>
-            <TopInfo label="SOURCE" value={source} />
+            <TopInfo label="SOURCE" value={ws.connected ? "twelvedata-ws" : source} />
             <TopInfo label="LIVE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
             <TopInfo label="CANDLES" value={String(candles.length)} />
             <TopInfo label="QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
             <TopInfo label="CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
-            <TopInfo label="PNL" value={totalPnL.toFixed(2)} />
+            <TopInfo label="WS" value={ws.connected ? "CONNECTED" : ws.error ? "ERROR" : "DISCONNECTED"} />
           </aside>
         </div>
 
@@ -517,7 +525,7 @@ export default function HomePage() {
               <StatCard label="CLOSE" value={lastCandle?.close} />
             </div>
             <div className={styles.inlineInfo}>
-              Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
+              Feed: {ws.connected ? "WebSocket" : "Fallback API"}
             </div>
           </section>
 
