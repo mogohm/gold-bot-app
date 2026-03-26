@@ -170,7 +170,7 @@
 
 .infoStripBody {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   padding: 10px;
 }
@@ -440,7 +440,8 @@
   }
 }
 
-@media (max-width: 1400px) {
+/* Desktop ทั่วไป ยังบังคับ 3 กล่องแถวเดียว */
+@media (max-width: 1100px) {
   .wrapperCompact {
     height: auto;
     min-height: 100vh;
@@ -452,10 +453,11 @@
   }
 
   .infoStripBody {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
+/* ค่อยยุบเมื่อจอเล็กจริง */
 @media (max-width: 900px) {
   .topBar {
     flex-direction: column;
@@ -468,6 +470,10 @@
 
   .statsCompact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .infoStripBody {
+    grid-template-columns: 1fr;
   }
 
   .miniGrid,
