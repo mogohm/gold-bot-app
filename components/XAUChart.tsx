@@ -40,7 +40,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
 
   const safeMarkers = useMemo((): SeriesMarkerBar<Time>[] => {
     return markers.map((m) => ({
-      time: m.time as Time,
+      time: m.time,
       position: m.position,
       color: m.color,
       shape: m.shape,
@@ -50,12 +50,14 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
 
   useEffect(() => {
     if (!containerRef.current) return;
-
     const container = containerRef.current;
 
+    const getWidth = () => Math.max(container.clientWidth, 300);
+    const getHeight = () => Math.max(container.clientHeight, 420);
+
     const chart = createChart(container, {
-      width: container.clientWidth || 1000,
-      height: Math.max(container.clientHeight || 440, 320),
+      width: getWidth(),
+      height: getHeight(),
       layout: {
         background: { type: ColorType.Solid, color: "#020617" },
         textColor: "#cbd5e1",
@@ -75,20 +77,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
         rightOffset: 6,
         barSpacing: 8,
       },
-      crosshair: {
-        mode: 0,
-      },
-      handleScroll: {
-        mouseWheel: true,
-        pressedMouseMove: true,
-        horzTouchDrag: true,
-        vertTouchDrag: false,
-      },
-      handleScale: {
-        axisPressedMouseMove: true,
-        mouseWheel: true,
-        pinch: true,
-      },
+      crosshair: { mode: 0 },
     });
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
@@ -120,22 +109,14 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
 
     const resizeChart = () => {
       if (!containerRef.current || !chartRef.current) return;
-
-      const width = containerRef.current.clientWidth || 1000;
-      const height = Math.max(containerRef.current.clientHeight || 440, 320);
-
       chartRef.current.applyOptions({
-        width,
-        height,
+        width: Math.max(containerRef.current.clientWidth, 300),
+        height: Math.max(containerRef.current.clientHeight, 420),
       });
     };
 
-    const resizeObserver = new ResizeObserver(() => {
-      resizeChart();
-    });
-
+    const resizeObserver = new ResizeObserver(() => resizeChart());
     resizeObserver.observe(container);
-
     window.addEventListener("resize", resizeChart);
 
     return () => {
@@ -151,32 +132,22 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
 
   useEffect(() => {
     if (!candleSeriesRef.current || !chartRef.current) return;
-    if (!candles || candles.length === 0) return;
+    if (!candles.length) return;
 
     candleSeriesRef.current.setData(candles);
-
-    if (markersApiRef.current) {
-      markersApiRef.current.setMarkers(safeMarkers);
-    }
-
+    markersApiRef.current?.setMarkers(safeMarkers);
     chartRef.current.timeScale().fitContent();
     chartRef.current.timeScale().scrollToRealTime();
   }, [candles, safeMarkers]);
 
   useEffect(() => {
-    if (!liveLineRef.current) return;
-    if (!candles || candles.length === 0) return;
-    if (typeof livePrice !== "number") return;
+    if (!liveLineRef.current || !candles.length || typeof livePrice !== "number") return;
 
     const last = candles[candles.length - 1];
-
-    const lineData: LineData<Time>[] = [
-      { time: last.time, value: livePrice },
-    ];
-
+    const lineData: LineData<Time>[] = [{ time: last.time, value: livePrice }];
     liveLineRef.current.setData(lineData);
     chartRef.current?.timeScale().scrollToRealTime();
   }, [livePrice, candles]);
 
-  return <div ref={containerRef} className="w-full h-full" />;
+  return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 }
