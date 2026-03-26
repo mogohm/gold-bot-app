@@ -5,20 +5,19 @@
   overflow: hidden;
 }
 
-.wrapperFinal {
+.wrapperRow {
   max-width: 1920px;
   height: 100vh;
   margin: 0 auto;
   padding: 10px;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto;
   gap: 10px;
   box-sizing: border-box;
 }
 
 .headerCard,
-.topInfoBar,
-.chartPanelBig,
+.mainRowCard,
 .sidePanel,
 .logPanelCompact {
   background: #0f172a;
@@ -83,65 +82,20 @@
   border-color: #f8fafc;
 }
 
-/* 6 ช่องบน = อยู่แถวเดียว */
-.topInfoBar {
+.mainRowCard {
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) 250px;
   gap: 0;
   overflow: hidden;
 }
 
-.topInfoItem {
-  padding: 10px 14px;
+.chartZone {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid #334155;
-  min-height: 68px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-}
-
-.topInfoItem:last-child {
-  border-right: none;
-}
-
-.miniLabel,
-.smallLabel,
-.badgeLabel,
-.compactLabel {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-.topInfoValue {
-  margin-top: 4px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #f8fafc;
-  line-height: 1.2;
-  word-break: break-word;
-}
-
-.mainArea {
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 10px;
-}
-
-.chartPanelBig,
-.sidePanel,
-.logPanelCompact {
-  overflow: hidden;
-}
-
-.chartPanelBig {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .chartTopBar {
@@ -179,7 +133,6 @@
   color: #94a3b8;
 }
 
-/* กราฟต้องกินเต็มกรอบ */
 .chartCanvasWrap {
   min-width: 0;
   min-height: 0;
@@ -200,10 +153,48 @@
   min-height: 0;
 }
 
-.rightRail {
-  min-height: 0;
+.infoRail {
   display: grid;
-  grid-template-rows: 1fr 1fr 1fr;
+  grid-template-rows: repeat(6, 1fr);
+  min-height: 0;
+}
+
+.topInfoItem {
+  padding: 10px 12px;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.topInfoItem:last-child {
+  border-bottom: none;
+}
+
+.miniLabel,
+.smallLabel,
+.badgeLabel,
+.compactLabel {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.topInfoValue {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.lowerPanels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -211,6 +202,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 
 .sideGrid {
@@ -444,44 +436,34 @@
   }
 }
 
-/* desktop ปกติยัง 6 ช่อง */
-@media (max-width: 1450px) {
-  .topInfoBar {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .topInfoItem {
-    padding: 8px 10px;
-  }
-
-  .topInfoValue {
-    font-size: 13px;
-  }
-
-  .chartToolbar {
-    flex-wrap: wrap;
-  }
-}
-
-/* ค่อยยุบจริงตอนจอแคบลง */
-@media (max-width: 1200px) {
-  .wrapperFinal {
+@media (max-width: 1300px) {
+  .wrapperRow {
     height: auto;
     min-height: 100vh;
     overflow: auto;
   }
 
-  .topInfoBar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .mainArea {
+  .mainRowCard {
     grid-template-columns: 1fr;
   }
 
-  .rightRail {
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto;
+  .chartZone {
+    border-right: none;
+    border-bottom: 1px solid #334155;
+  }
+
+  .infoRail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+  }
+
+  .topInfoItem {
+    border-bottom: 1px solid #334155;
+    border-right: 1px solid #334155;
+  }
+
+  .topInfoItem:nth-child(3n) {
+    border-right: none;
   }
 }
 
@@ -489,10 +471,6 @@
   .headerCard {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .topInfoBar {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .chartTopBar {
@@ -505,7 +483,19 @@
     flex-wrap: wrap;
   }
 
-  .rightRail {
+  .infoRail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .topInfoItem:nth-child(3n) {
+    border-right: 1px solid #334155;
+  }
+
+  .topInfoItem:nth-child(2n) {
+    border-right: none;
+  }
+
+  .lowerPanels {
     grid-template-columns: 1fr;
   }
 
