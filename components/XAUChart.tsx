@@ -51,9 +51,11 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const chart = createChart(containerRef.current, {
-      width: containerRef.current.clientWidth || 900,
-      height: 320,
+    const container = containerRef.current;
+
+    const chart = createChart(container, {
+      width: container.clientWidth || 1000,
+      height: Math.max(container.clientHeight || 440, 320),
       layout: {
         background: { type: ColorType.Solid, color: "#020617" },
         textColor: "#cbd5e1",
@@ -64,14 +66,28 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
       },
       rightPriceScale: {
         borderColor: "#334155",
+        entireTextOnly: true,
       },
       timeScale: {
         borderColor: "#334155",
         timeVisible: true,
-        secondsVisible: true,
+        secondsVisible: false,
+        rightOffset: 6,
+        barSpacing: 8,
       },
       crosshair: {
         mode: 0,
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false,
+      },
+      handleScale: {
+        axisPressedMouseMove: true,
+        mouseWheel: true,
+        pinch: true,
       },
     });
 
@@ -82,6 +98,8 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
       borderDownColor: "#ef4444",
       wickUpColor: "#22c55e",
       wickDownColor: "#ef4444",
+      priceLineVisible: false,
+      lastValueVisible: true,
     });
 
     const liveLine = chart.addSeries(LineSeries, {
@@ -90,6 +108,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
       lastValueVisible: true,
       priceLineVisible: true,
       crosshairMarkerVisible: false,
+      lineVisible: true,
     });
 
     const markersApi = createSeriesMarkers(candleSeries, []);
@@ -99,19 +118,29 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
     liveLineRef.current = liveLine;
     markersApiRef.current = markersApi;
 
-    const resize = () => {
+    const resizeChart = () => {
       if (!containerRef.current || !chartRef.current) return;
+
+      const width = containerRef.current.clientWidth || 1000;
+      const height = Math.max(containerRef.current.clientHeight || 440, 320);
+
       chartRef.current.applyOptions({
-        width: containerRef.current.clientWidth || 900,
-        height: 320,
+        width,
+        height,
       });
-      chartRef.current.timeScale().fitContent();
     };
 
-    window.addEventListener("resize", resize);
+    const resizeObserver = new ResizeObserver(() => {
+      resizeChart();
+    });
+
+    resizeObserver.observe(container);
+
+    window.addEventListener("resize", resizeChart);
 
     return () => {
-      window.removeEventListener("resize", resize);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", resizeChart);
       chart.remove();
       chartRef.current = null;
       candleSeriesRef.current = null;
@@ -131,6 +160,7 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
     }
 
     chartRef.current.timeScale().fitContent();
+    chartRef.current.timeScale().scrollToRealTime();
   }, [candles, safeMarkers]);
 
   useEffect(() => {
@@ -139,9 +169,14 @@ export default function XAUChart({ candles, livePrice, markers = [] }: Props) {
     if (typeof livePrice !== "number") return;
 
     const last = candles[candles.length - 1];
-    const lineData: LineData<Time>[] = [{ time: last.time, value: livePrice }];
+
+    const lineData: LineData<Time>[] = [
+      { time: last.time, value: livePrice },
+    ];
+
     liveLineRef.current.setData(lineData);
+    chartRef.current?.timeScale().scrollToRealTime();
   }, [livePrice, candles]);
 
-  return <div ref={containerRef} className="w-full rounded-2xl" />;
+  return <div ref={containerRef} className="w-full h-full" />;
 }
