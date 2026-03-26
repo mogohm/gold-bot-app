@@ -445,12 +445,12 @@ export default function HomePage() {
 
   return (
     <main className={styles.screen}>
-      <div className={styles.wrapperFinal}>
+      <div className={styles.wrapperRow}>
         <div className={styles.headerCard}>
           <div>
             <div className={styles.headerTitle}>XAU/USD BOT SIMULATOR DASHBOARD</div>
             <div className={styles.headerSub}>
-              Realtime chart · simulated orders · chart-first layout
+              Realtime chart · simulated orders · row layout
             </div>
           </div>
 
@@ -462,17 +462,8 @@ export default function HomePage() {
           </button>
         </div>
 
-        <section className={styles.topInfoBar}>
-          <TopInfo label="SOURCE" value={source} />
-          <TopInfo label="LIVE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
-          <TopInfo label="CANDLES" value={String(candles.length)} />
-          <TopInfo label="QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
-          <TopInfo label="CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
-          <TopInfo label="PNL" value={totalPnL.toFixed(2)} />
-        </section>
-
-        <div className={styles.mainArea}>
-          <section className={styles.chartPanelBig}>
+        <div className={styles.mainRowCard}>
+          <div className={styles.chartZone}>
             <div className={styles.chartTopBar}>
               <div>
                 <div className={styles.panelTitle}>PRICE CHART</div>
@@ -503,72 +494,81 @@ export default function HomePage() {
                 <XAUChart candles={candles} livePrice={livePrice} markers={chartMarkers} />
               )}
             </div>
+          </div>
+
+          <aside className={styles.infoRail}>
+            <TopInfo label="SOURCE" value={source} />
+            <TopInfo label="LIVE" value={typeof livePrice === "number" ? livePrice.toFixed(2) : "--"} />
+            <TopInfo label="CANDLES" value={String(candles.length)} />
+            <TopInfo label="QUOTE" value={lastQuoteAt ? new Date(lastQuoteAt).toLocaleTimeString() : "--"} />
+            <TopInfo label="CANDLE" value={lastCandlesAt ? new Date(lastCandlesAt).toLocaleTimeString() : "--"} />
+            <TopInfo label="PNL" value={totalPnL.toFixed(2)} />
+          </aside>
+        </div>
+
+        <div className={styles.lowerPanels}>
+          <section className={styles.sidePanel}>
+            <div className={styles.panelHeaderCompact}>
+              <div className={styles.panelTitle}>MARKET</div>
+              <div className={styles.panelSub}>Current values</div>
+            </div>
+            <div className={styles.sideGrid}>
+              <StatCard label="OPEN" value={lastCandle?.open} />
+              <StatCard label="HIGH" value={lastCandle?.high} />
+              <StatCard label="LOW" value={lastCandle?.low} />
+              <StatCard label="CLOSE" value={lastCandle?.close} />
+            </div>
+            <div className={styles.inlineInfo}>
+              Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
+            </div>
           </section>
 
-          <aside className={styles.rightRail}>
-            <section className={styles.sidePanel}>
-              <div className={styles.panelHeaderCompact}>
-                <div className={styles.panelTitle}>MARKET</div>
-                <div className={styles.panelSub}>Current values</div>
-              </div>
-              <div className={styles.sideGrid}>
-                <StatCard label="OPEN" value={lastCandle?.open} />
-                <StatCard label="HIGH" value={lastCandle?.high} />
-                <StatCard label="LOW" value={lastCandle?.low} />
-                <StatCard label="CLOSE" value={lastCandle?.close} />
-              </div>
-              <div className={styles.inlineInfo}>
-                Polling: {loadingQuote ? "Refreshing..." : `${getQuoteRefreshMs(interval) / 1000}s`}
-              </div>
-            </section>
+          <section className={styles.sidePanel}>
+            <div className={styles.panelHeaderCompact}>
+              <div className={styles.panelTitle}>BOT STATUS</div>
+              <div className={styles.panelSub}>Execution</div>
+            </div>
 
-            <section className={styles.sidePanel}>
-              <div className={styles.panelHeaderCompact}>
-                <div className={styles.panelTitle}>BOT STATUS</div>
-                <div className={styles.panelSub}>Execution</div>
-              </div>
+            <div className={styles.statusCompact}>
+              <span className={styles.badgeLabel}>ENGINE</span>
+              <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
+                {botEnabled ? "RUNNING" : "PAUSED"}
+              </span>
+            </div>
 
-              <div className={styles.statusCompact}>
-                <span className={styles.badgeLabel}>ENGINE</span>
-                <span className={`${styles.badge} ${botEnabled ? styles.badgeGreen : styles.badgeGray}`}>
-                  {botEnabled ? "RUNNING" : "PAUSED"}
-                </span>
-              </div>
-
-              {openOrder ? (
-                <div className={styles.activeCompact}>
-                  <div className={styles.activeHeaderCompact}>
-                    <span className={styles.pingDotWrap}>
-                      <span className={styles.pingDot}></span>
-                      <span className={styles.pingDotCore}></span>
-                    </span>
-                    <span className={styles.activeText}>ACTIVE ORDER</span>
-                  </div>
-                  <div className={styles.compactInfoList}>
-                    <CompactLine label="SIDE" value={openOrder.side} />
-                    <CompactLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
-                    <CompactLine label="TP" value={openOrder.tp.toFixed(2)} />
-                    <CompactLine label="SL" value={openOrder.sl.toFixed(2)} />
-                  </div>
+            {openOrder ? (
+              <div className={styles.activeCompact}>
+                <div className={styles.activeHeaderCompact}>
+                  <span className={styles.pingDotWrap}>
+                    <span className={styles.pingDot}></span>
+                    <span className={styles.pingDotCore}></span>
+                  </span>
+                  <span className={styles.activeText}>ACTIVE ORDER</span>
                 </div>
-              ) : (
-                <div className={styles.emptyCompact}>No active simulated order</div>
-              )}
-            </section>
+                <div className={styles.compactInfoList}>
+                  <CompactLine label="SIDE" value={openOrder.side} />
+                  <CompactLine label="ENTRY" value={openOrder.entryPrice.toFixed(2)} />
+                  <CompactLine label="TP" value={openOrder.tp.toFixed(2)} />
+                  <CompactLine label="SL" value={openOrder.sl.toFixed(2)} />
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyCompact}>No active simulated order</div>
+            )}
+          </section>
 
-            <section className={styles.sidePanel}>
-              <div className={styles.panelHeaderCompact}>
-                <div className={styles.panelTitle}>SUMMARY</div>
-                <div className={styles.panelSub}>Overview</div>
-              </div>
-              <div className={styles.sideGrid}>
-                <SummaryTile label="ORDERS" value={String(orders.length)} />
-                <SummaryTile label="OPEN" value={String(orders.filter((o) => o.status === "OPEN").length)} />
-                <SummaryTile label="WIN" value={String(orders.filter((o) => o.status === "TP").length)} />
-                <SummaryTile label="LOSS" value={String(orders.filter((o) => o.status === "SL").length)} />
-              </div>
-            </section>
-          </aside>
+          <section className={styles.sidePanel}>
+            <div className={styles.panelHeaderCompact}>
+              <div className={styles.panelTitle}>SUMMARY</div>
+              <div className={styles.panelSub}>Overview</div>
+            </div>
+            <div className={styles.sideGrid}>
+              <SummaryTile label="ORDERS" value={String(orders.length)} />
+              <SummaryTile label="OPEN" value={String(orders.filter((o) => o.status === "OPEN").length)} />
+              <SummaryTile label="WIN" value={String(orders.filter((o) => o.status === "TP").length)} />
+              <SummaryTile label="LOSS" value={String(orders.filter((o) => o.status === "SL").length)} />
+            </div>
+          </section>
         </div>
 
         <section className={styles.logPanelCompact}>
